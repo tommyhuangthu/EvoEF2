@@ -34,9 +34,9 @@ extern BOOL FLAG_PROT_LIG;
 extern double weights[MAX_EVOEF_ENERGY_TERM_NUM];
 
 #define PNATAA_USING_ROSETTA_LOSS_FUNCTION
-//#define PNATAA_USING_NOVA_LOSS_FUNCTION
-//#define PNATAA_USING_NOVA_LOSS_FUNCTION2
-//#define PNATROT_USING_NOVA_LOSS_FUNCTION
+//#define PNATAA_USING_EVOEF_LOSS_FUNCTION
+//#define PNATAA_USING_EVOEF_LOSS_FUNCTION2
+//#define PNATROT_USING_EVOEF_LOSS_FUNCTION
 
 
 //this function used to check whether or not a value is NaN
@@ -553,7 +553,7 @@ int PNATAA_LossFunction(EnergyTermsAA* pTerms,double *x,int xcount,double *loss)
   *loss = lossscore;
 #endif
 
-#ifdef PNATAA_USING_NOVA_LOSS_FUNCTION
+#ifdef PNATAA_USING_EVOEF_LOSS_FUNCTION
   double lossscore=0;
   for(int i=0; i<pTerms->posCount; i++){
     EnergyTermAA *pTermAll = &pTerms->terms[i];
@@ -588,7 +588,7 @@ int PNATAA_LossFunction(EnergyTermsAA* pTerms,double *x,int xcount,double *loss)
 #endif
 
 
-#ifdef PNATAA_USING_NOVA_LOSS_FUNCTION2
+#ifdef PNATAA_USING_EVOEF_LOSS_FUNCTION2
   double lossscore=0;
   for(int i=0; i<pTerms->posCount; i++){
     EnergyTermAA *pTermAll = &pTerms->terms[i];
@@ -624,7 +624,7 @@ int PNATAA_LossFunction(EnergyTermsAA* pTerms,double *x,int xcount,double *loss)
 
 
 
-#ifdef PNATROT_USING_NOVA_LOSS_FUNCTION
+#ifdef PNATROT_USING_EVOEF_LOSS_FUNCTION
   double lossscore=0;
   for(int i=0; i<pTerms->posCount; i++){
     EnergyTermAA *pTermAll = &pTerms->terms[i];

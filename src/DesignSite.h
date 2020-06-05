@@ -41,7 +41,7 @@ int DesignSiteRemoveRotamers(DesignSite* pThis);
 
 int DesignSiteShowRepresentativeRotamerAtomParameter(DesignSite* pThis);
 int DesignSiteShowRepresentativeRotamerBondInformation(DesignSite* pThis);
-
+int DesignSiteCopy(DesignSite* pThis,DesignSite* pOther);
 
 
 

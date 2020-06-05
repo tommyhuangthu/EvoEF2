@@ -23,38 +23,38 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "EnergyFunction.h"
 
 
-int NOVA_help();
-int NOVA_version();
-int NOVA_interface();
-int NOVA_ComputeChainStability(Structure *pStructure, int chainIndex, double *energyTerms);
-int NOVA_ComputeStability(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]);
-int NOVA_ComputeStabilityWithBBdepRotLib(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,BBdepRotamerLib* pRotLib,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]);
-int NOVA_ComputeStabilityForSelectedChains(Structure *pStructure, double *energyTerms,char selechains[]);
-int NOVA_ComputeBinding(Structure *pStructure);
-int NOVA_ComputeBindingWithSplitting(Structure *pStructure,char split1[], char split2[]);
-int NOVA_ComputeBindingWithSplittingNew(Structure *pStructure,char split1[], char split2[]);
-int NOVA_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* rotlib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
-int NOVA_BuildMutantWithBBdepRotLib(Structure* pStructure, char* mutantfile, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
-int NOVA_RepairStructure(Structure* pStructure, BBindRotamerLib* rotlib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
-int NOVA_WriteStructureToFile(Structure* pStructure, char* pdbfile);
-int NOVA_AddHydrogen(Structure* pStructure, char* pdbid);
-int NOVA_OptimizeHydrogen(Structure* pStructure, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
-int NOVA_StructureComputeResidueInteractionWithFixedSurroundingResidues(Structure *pStructure, int chainIndex, int residueIndex);
+int EVOEF_help();
+int EVOEF_version();
+int EVOEF_interface();
+int EVOEF_ComputeChainStability(Structure *pStructure, int chainIndex, double *energyTerms);
+int EVOEF_ComputeStability(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]);
+int EVOEF_ComputeStabilityWithBBdepRotLib(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,BBdepRotamerLib* pRotLib,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]);
+int EVOEF_ComputeStabilityForSelectedChains(Structure *pStructure, double *energyTerms,char selechains[]);
+int EVOEF_ComputeBinding(Structure *pStructure);
+int EVOEF_ComputeBindingWithSplitting(Structure *pStructure,char split1[], char split2[]);
+int EVOEF_ComputeBindingWithSplittingNew(Structure *pStructure,char split1[], char split2[]);
+int EVOEF_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* rotlib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
+int EVOEF_BuildMutantWithBBdepRotLib(Structure* pStructure, char* mutantfile, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
+int EVOEF_RepairStructure(Structure* pStructure, BBindRotamerLib* rotlib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
+int EVOEF_WriteStructureToFile(Structure* pStructure, char* pdbfile);
+int EVOEF_AddHydrogen(Structure* pStructure, char* pdbid);
+int EVOEF_OptimizeHydrogen(Structure* pStructure, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
+int EVOEF_StructureComputeResidueInteractionWithFixedSurroundingResidues(Structure *pStructure, int chainIndex, int residueIndex);
 
 
-int NOVA_ComputeRotamersEnergy(Structure* pStructure,BBindRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
-int NOVA_ComputeWildtypeRotamersEnergy(Structure* pStructure,BBindRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
+int EVOEF_ComputeRotamersEnergy(Structure* pStructure,BBindRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
+int EVOEF_ComputeWildtypeRotamersEnergy(Structure* pStructure,BBindRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid);
 
-int NOVA_StructureFindInterfaceResidues(Structure *pStructure,double cutoff,char* outputfile);
+int EVOEF_StructureFindInterfaceResidues(Structure *pStructure,double cutoff,char* outputfile);
 int StructureCalcPhiPsi(Structure* pStructure);
-int NOVA_StructureShowPhiPsi(Structure* pStructure,char* phipsifile);
-int NOVA_ComputeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
-int NOVA_ComputeWildtypeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
+int EVOEF_StructureShowPhiPsi(Structure* pStructure,char* phipsifile);
+int EVOEF_ComputeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
+int EVOEF_ComputeWildtypeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* rotlib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
 
-int NOVA_CheckRotamerInBBindRotLib(Structure* pStructure,BBindRotamerLib* pRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid);
-int NOVA_CheckRotamerInBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid);
-int NOVA_RepairStructureWithBBdepRotLib(Structure* pStructure, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
-int NOVA_GetResiMinRmsdRotFromLab(Structure* pStructure,char* pdbid);
+int EVOEF_CheckRotamerInBBindRotLib(Structure* pStructure,BBindRotamerLib* pRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid);
+int EVOEF_CheckRotamerInBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid);
+int EVOEF_RepairStructureWithBBdepRotLib(Structure* pStructure, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid);
+int EVOEF_GetResiMinRmsdRotFromLab(Structure* pStructure,char* pdbid);
 
 
 

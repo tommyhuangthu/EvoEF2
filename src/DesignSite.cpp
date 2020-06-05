@@ -83,3 +83,10 @@ int DesignSiteRemoveRotamers(DesignSite* pThis){
 }
 
 
+int DesignSiteCopy(DesignSite* pThis,DesignSite* pOther){
+  pThis->chainIndex=pOther->chainIndex;
+  pThis->resiIndex=pOther->resiIndex;
+  pThis->pResidue=pOther->pResidue;
+  RotamerSetCopy(&pThis->rotamers,&pOther->rotamers);
+  return Success;
+}

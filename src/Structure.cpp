@@ -695,3 +695,20 @@ int StructureCalcProteinResidueSidechainTorsion(Structure* pThis, ResiTopoSet* p
   }
   return Success;
 }
+
+int StructureCopy(Structure* pThis, Structure* pOther){
+  for(int i=0;i<StructureGetChainCount(pOther);i++){
+    //Chain tempChain;
+    //ChainCreate(&tempChain);
+    //ChainCopy(&tempChain,&pOther->chains[i]);
+    StructureAddChain(pThis,&pOther->chains[i]);
+    //ChainDestroy(&tempChain);
+  }
+  pThis->chainNum=pOther->chainNum;
+  pThis->designSiteCount=pOther->designSiteCount;
+  strcpy(pThis->name,pOther->name);
+  for(int i=0;i<pOther->designSiteCount;i++){
+    DesignSiteCopy(&pThis->designSites[i],&pOther->designSites[i]);
+  }
+  return Success;
+}

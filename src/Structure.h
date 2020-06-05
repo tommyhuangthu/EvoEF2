@@ -71,6 +71,6 @@ DesignSite * StructureFindDesignSiteByChainName(Structure *pStructure, char *cha
 int DesignSiteIndexFind(Structure *pStructure, char *chainName, int posInSeg);
 int DesignSiteIndexGet(Structure *pStructure,int chainIndex, int resiIndex);
 int StructureCalcProteinResidueSidechainTorsion(Structure* pThis, ResiTopoSet* pResiTopos);
-
+int StructureCopy(Structure* pThis, Structure* pOther);
 
 #endif // STRUCTURE_H

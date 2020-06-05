@@ -31,7 +31,7 @@ extern BOOL FLAG_ADD_CRYSTAL_ROT;
 extern BOOL FLAG_EXPAND_HYDROXYL_ROT;
 
 
-int NOVA_help(){
+int EVOEF_help(){
   printf(  
     "EvoEF2 program options:\n\n"
     "Basic OPTIONS:\n"
@@ -48,16 +48,16 @@ int NOVA_help(){
   return Success;
 }
 
-int NOVA_version(){
+int EVOEF_version(){
   printf("The energy function engine is EvoEF version 2\n");
   return Success;
 }
 
 
-int NOVA_interface(){
+int EVOEF_interface(){
   printf(
     "############################################################################################\n"
-    "                                    NOVA                                                    \n"
+    "                                    EVOEF                                                    \n"
     "  A framework for macromolecular modeling, e.g.,protein design, protein side-chain packing, \n"
     "protein structure energy minimization, add and optimize hydrogen bonds, build mutant model, \n"
     "calculate protein folding stability, calculate protein-protein binding free energy, etc     \n"
@@ -80,7 +80,7 @@ int NOVA_interface(){
 ///////////////////////////////////////////////////////////////////////////////////////////
 //MAIN functions
 //////////////////////////////////////////////////////////////////////////////////////////
-int NOVA_ComputeChainStability(Structure *pStructure, int chainIndex, double *energyTerms){
+int EVOEF_ComputeChainStability(Structure *pStructure, int chainIndex, double *energyTerms){
   EnergyTermInitialize(energyTerms);
   //ChainComputeResiduePosition(pStructure, chainIndex);
   Chain *pChainI = StructureGetChain(pStructure, chainIndex);
@@ -149,7 +149,7 @@ int NOVA_ComputeChainStability(Structure *pStructure, int chainIndex, double *en
 
 
 
-int NOVA_ComputeStability(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]){
+int EVOEF_ComputeStability(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]){
   //EnergyTermInitialize(energyTerms);
   int aas[20]={0}; //ACDEFGHIKLMNPQRSTVWY, only for regular amino acid
   //StructureGetAminoAcidComposition(pStructure, aas);
@@ -252,7 +252,7 @@ int NOVA_ComputeStability(Structure *pStructure,AAppTable* pAAppTable,RamaTable*
 }
 
 
-int NOVA_ComputeStabilityWithBBdepRotLib(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,BBdepRotamerLib* pRotLib,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]){
+int EVOEF_ComputeStabilityWithBBdepRotLib(Structure *pStructure,AAppTable* pAAppTable,RamaTable* pRama,BBdepRotamerLib* pRotLib,double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]){
   //EnergyTermInitialize(energyTerms);
   int aas[20]={0}; //ACDEFGHIKLMNPQRSTVWY, only for regular amino acid
   //StructureGetAminoAcidComposition(pStructure, aas);
@@ -355,7 +355,7 @@ int NOVA_ComputeStabilityWithBBdepRotLib(Structure *pStructure,AAppTable* pAAppT
   return Success;
 }
 
-int NOVA_ComputeBinding(Structure *pStructure){
+int EVOEF_ComputeBinding(Structure *pStructure){
   if(StructureGetChainCount(pStructure)>2){
     printf("Your structure has more than two protein chains, and you should specify how to split chains "
       "before computing the binding energy\n");
@@ -449,7 +449,7 @@ int NOVA_ComputeBinding(Structure *pStructure){
 }
 
 
-int NOVA_ComputeBindingWithSplittingNew(Structure *pStructure,char split1[], char split2[]){
+int EVOEF_ComputeBindingWithSplittingNew(Structure *pStructure,char split1[], char split2[]){
   double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]={0};
   for(int i=0;i<StructureGetChainCount(pStructure);i++){
     Chain* pChainI=StructureGetChain(pStructure,i);
@@ -535,7 +535,7 @@ int NOVA_ComputeBindingWithSplittingNew(Structure *pStructure,char split1[], cha
 
 
 //this function is used to build the structure model of mutations
-int NOVA_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* rotlib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
+int EVOEF_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* rotlib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
   FileReader fr;
   FileReaderCreate(&fr, mutantfile);
   int mutantcount = FileReaderGetLineCount(&fr);
@@ -563,6 +563,9 @@ int NOVA_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* r
   FileReaderDestroy(&fr);
 
   for(int mutantIndex = 0; mutantIndex < mutantcount; mutantIndex++){
+    Structure tempStruct;
+    StructureCreate(&tempStruct);
+    StructureCopy(&tempStruct,pStructure);
     //for each mutant, build the rotamer-tree
     IntArray mutantArray,rotamersArray;
     IntArrayCreate(&mutantArray,0);
@@ -575,12 +578,12 @@ int NOVA_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* r
       sscanf(mutstr, "%c%c%d%c", &aa1, &chn, &posInChain, &aa2);
       int chainIndex = -1, residueIndex = -1;
       char chainname[MAX_LENGTH_CHAIN_NAME]; chainname[0] = chn; chainname[1] = '\0';
-      StructureFindChainIndex(pStructure, chainname, &chainIndex);
+      StructureFindChainIndex(&tempStruct,chainname,&chainIndex);
       if(chainIndex==-1){
         printf("in file %s function %s() line %d, cannot find mutation %s\n", __FILE__, __FUNCTION__, __LINE__, mutstr);
         exit(ValueError);
       }
-      ChainFindResidueByPosInChain(StructureGetChain(pStructure, chainIndex), posInChain, &residueIndex);
+      ChainFindResidueByPosInChain(StructureGetChain(&tempStruct, chainIndex), posInChain, &residueIndex);
       if(residueIndex==-1){
         printf("in file %s function %s() line %d, cannot find mutation %s\n", __FILE__, __FUNCTION__, __LINE__, mutstr);
         exit(ValueError);
@@ -593,7 +596,7 @@ int NOVA_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* r
       // for histidine, the default mutaatype is HSD, we need to add HSE
       StringArrayAppend(&designType, mutaatype); StringArrayAppend(&patchType, "");
       if(aa2=='H'){StringArrayAppend(&designType, "HSE"); StringArrayAppend(&patchType, "");}
-      ProteinSiteBuildMutatedRotamers(pStructure,chainIndex,residueIndex,rotlib,atomParams,resiTopos,&designType,&patchType);
+      ProteinSiteBuildMutatedRotamers(&tempStruct,chainIndex,residueIndex,rotlib,atomParams,resiTopos,&designType,&patchType);
       IntArrayAppend(&mutantArray, chainIndex);
       IntArrayAppend(&mutantArray, residueIndex);
       IntArrayAppend(&rotamersArray,chainIndex);
@@ -606,15 +609,15 @@ int NOVA_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* r
     for(int ii=0; ii<IntArrayGetLength(&mutantArray); ii+=2){
       int chainIndex = IntArrayGet(&mutantArray,ii);
       int resiIndex = IntArrayGet(&mutantArray,ii+1);
-      Residue *pResi1 = ChainGetResidue(StructureGetChain(pStructure, chainIndex), resiIndex);
-      for(int j = 0; j < StructureGetChainCount(pStructure); ++j){
-        Chain* pChain = StructureGetChain(pStructure,j);
+      Residue *pResi1 = ChainGetResidue(StructureGetChain(&tempStruct, chainIndex), resiIndex);
+      for(int j = 0; j < StructureGetChainCount(&tempStruct); ++j){
+        Chain* pChain = StructureGetChain(&tempStruct,j);
         for(int k=0; k<ChainGetResidueCount(pChain); k++){
           Residue* pResi2 = ChainGetResidue(pChain,k);
           if(AtomArrayCalcMinDistance(&pResi1->atoms,&pResi2->atoms)<ENERGY_DISTANCE_CUTOFF){
             if(pResi2->designSiteType==Type_ResidueDesignType_Fixed){
-              ProteinSiteBuildWildtypeRotamers(pStructure,j,k,rotlib,atomParams,resiTopos);
-              ProteinSiteAddCrystalRotamer(pStructure,j,k,resiTopos);
+              ProteinSiteBuildWildtypeRotamers(&tempStruct,j,k,rotlib,atomParams,resiTopos);
+              ProteinSiteAddCrystalRotamer(&tempStruct,j,k,resiTopos);
               IntArrayAppend(&rotamersArray,j);
               IntArrayAppend(&rotamersArray,k);
             }
@@ -625,47 +628,50 @@ int NOVA_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* r
 
     // optimization rotamers sequentially
     printf("EvoEF Building mutation model %d, the following sites will be optimized:\n",mutantIndex+1);
-    IntArrayShow(&rotamersArray);
-    printf("\n");
-    for(int cycle=0; cycle<3; cycle++){
+    //IntArrayShow(&rotamersArray);
+    //printf("\n");
+    printf("chnIndex resIndex (both of them starts from zero on the chain)\n");
+    for(int ii=0;ii<IntArrayGetLength(&rotamersArray);ii+=2){
+      printf("%8d %8d\n",IntArrayGet(&rotamersArray,ii),IntArrayGet(&rotamersArray,ii+1));
+    }
+    for(int cycle=0; cycle<10; cycle++){
       printf("optimization cycle %d ... \n",cycle+1);
       for(int ii=0; ii<IntArrayGetLength(&rotamersArray); ii+=2){
         int chainIndex = IntArrayGet(&rotamersArray, ii);
         int resiIndex = IntArrayGet(&rotamersArray, ii+1);
-        //ProteinSiteOptimizeRotamer(pStructure, chainIndex, resiIndex);
-        ProteinSiteOptimizeRotamerLocally(pStructure,chainIndex,resiIndex,1.0);
+        ProteinSiteOptimizeRotamer(&tempStruct, chainIndex, resiIndex);
       }
     }
     IntArrayDestroy(&mutantArray);
     IntArrayDestroy(&rotamersArray);
     //remember to delete rotamers for previous mutant
-    StructureRemoveAllDesignSites(pStructure);
+    StructureRemoveAllDesignSites(&tempStruct);
 
     char modelfile[MAX_LENGTH_ONE_LINE_IN_FILE+1];
     if(pdbid!=NULL)
-      sprintf(modelfile,"%s_Model_%d.pdb",pdbid,mutantIndex+1);
+      sprintf(modelfile,"%s_Model_%04d.pdb",pdbid,mutantIndex+1);
     else
-      sprintf(modelfile,"EvoEF_Model_%d.pdb",mutantIndex+1);
+      sprintf(modelfile,"EvoEF_Model_%04d.pdb",mutantIndex+1);
     FILE* pf=fopen(modelfile,"w");
     fprintf(pf,"REMARK EvoEF generated pdb file\n");
     fprintf(pf,"REMARK Output generated by EvoEF <BuildMutant>\n");
-    StructureShowInPDBFormat(pStructure,TRUE,pf);
+    StructureShowInPDBFormat(&tempStruct,TRUE,pf);
     fclose(pf);
+    StructureDestroy(&tempStruct);
   }
 
   return Success;
 }
 
 
-int NOVA_BuildMutantWithBBdepRotLib(Structure* pStructure, char* mutantfile, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
+int EVOEF_BuildMutantWithBBdepRotLib(Structure* pStructure, char* mutantfile, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
   FileReader fr;
   FileReaderCreate(&fr, mutantfile);
   int mutantcount = FileReaderGetLineCount(&fr);
   if(mutantcount<=0){
-    printf("There is no mutant found in the mutant file\n");
-    return DataNotExistError;
+    printf("in %s %s %d, no mutation found in the mutant file\n",__FILE__,__FUNCTION__,__LINE__);
+    exit(DataNotExistError);
   }
-
   StringArray* mutants = (StringArray*)malloc(sizeof(StringArray)*mutantcount);
   char line[MAX_LENGTH_ONE_LINE_IN_FILE+1];
   int mutantIndex=0;
@@ -684,27 +690,30 @@ int NOVA_BuildMutantWithBBdepRotLib(Structure* pStructure, char* mutantfile, BBd
   }
   FileReaderDestroy(&fr);
 
-  for(int mutantIndex = 0; mutantIndex < mutantcount; mutantIndex++){
+  for(int mutantIndex = 0;mutantIndex<mutantcount;mutantIndex++){
+    Structure tempStruct;
+    StructureCreate(&tempStruct);
+    StructureCopy(&tempStruct,pStructure);
     //for each mutant, build the rotamer-tree
-    IntArray mutantArray,rotamersArray;
-    IntArrayCreate(&mutantArray,0);
-    IntArrayCreate(&rotamersArray,0);
-    for(int cycle=0; cycle<StringArrayGetCount(&mutants[mutantIndex]); cycle++){
+    IntArray mutatedArray,rotamericArray;
+    IntArrayCreate(&mutatedArray,0);
+    IntArrayCreate(&rotamericArray,0);
+    for(int posIndex=0; posIndex<StringArrayGetCount(&mutants[mutantIndex]); posIndex++){
       char mutstr[10];
-      char aa1, chn, aa2;
+      char aa1,chn,aa2;
       int posInChain;
-      strcpy(mutstr, StringArrayGet(&mutants[mutantIndex], cycle));
-      sscanf(mutstr, "%c%c%d%c", &aa1, &chn, &posInChain, &aa2);
+      strcpy(mutstr,StringArrayGet(&mutants[mutantIndex],posIndex));
+      sscanf(mutstr,"%c%c%d%c",&aa1,&chn,&posInChain,&aa2);
       int chainIndex = -1, residueIndex = -1;
-      char chainname[MAX_LENGTH_CHAIN_NAME]; chainname[0] = chn; chainname[1] = '\0';
-      StructureFindChainIndex(pStructure, chainname, &chainIndex);
+      char chainname[MAX_LENGTH_CHAIN_NAME]; chainname[0]=chn; chainname[1]='\0';
+      StructureFindChainIndex(&tempStruct,chainname,&chainIndex);
       if(chainIndex==-1){
-        printf("in file %s function %s() line %d, cannot find mutation %s\n", __FILE__, __FUNCTION__, __LINE__, mutstr);
+        printf("in %s %s %d, cannot find mutation %s\n", __FILE__, __FUNCTION__, __LINE__, mutstr);
         exit(ValueError);
       }
-      ChainFindResidueByPosInChain(StructureGetChain(pStructure, chainIndex), posInChain, &residueIndex);
+      ChainFindResidueByPosInChain(StructureGetChain(&tempStruct, chainIndex), posInChain, &residueIndex);
       if(residueIndex==-1){
-        printf("in file %s function %s() line %d, cannot find mutation %s\n", __FILE__, __FUNCTION__, __LINE__, mutstr);
+        printf("in %s %s %d, cannot find mutation %s\n", __FILE__, __FUNCTION__, __LINE__, mutstr);
         exit(ValueError);
       }
       char mutaatype[MAX_LENGTH_RESIDUE_NAME];
@@ -712,74 +721,74 @@ int NOVA_BuildMutantWithBBdepRotLib(Structure* pStructure, char* mutantfile, BBd
       StringArray designType, patchType;
       StringArrayCreate(&designType);
       StringArrayCreate(&patchType);
-      // for histidine, the default mutaatype is HSD, we need to add HSE
+      //for histidine, the default mutaatype is HSD, we need to add HSE
       StringArrayAppend(&designType, mutaatype); StringArrayAppend(&patchType, "");
       if(aa2=='H'){StringArrayAppend(&designType, "HSE"); StringArrayAppend(&patchType, "");}
-      ProteinSiteBuildMutatedRotamersByBBdepRotLib(pStructure,chainIndex,residueIndex,pBBdepRotLib,atomParams,resiTopos,&designType,&patchType);
-      IntArrayAppend(&mutantArray, chainIndex);
-      IntArrayAppend(&mutantArray, residueIndex);
-      IntArrayAppend(&rotamersArray,chainIndex);
-      IntArrayAppend(&rotamersArray,residueIndex);
+      ProteinSiteBuildMutatedRotamersByBBdepRotLib(&tempStruct,chainIndex,residueIndex,pBBdepRotLib,atomParams,resiTopos,&designType,&patchType);
+      IntArrayAppend(&mutatedArray, chainIndex);
+      IntArrayAppend(&mutatedArray, residueIndex);
+      IntArrayAppend(&rotamericArray,chainIndex);
+      IntArrayAppend(&rotamericArray,residueIndex);
       StringArrayDestroy(&designType);
       StringArrayDestroy(&patchType);
     }
 
-    // for each mutant, find the surrounding residues and build the wild-type rotamer-tree
-    for(int ii=0; ii<IntArrayGetLength(&mutantArray); ii+=2){
-      int chainIndex = IntArrayGet(&mutantArray,ii);
-      int resiIndex = IntArrayGet(&mutantArray,ii+1);
-      Residue *pResi1 = ChainGetResidue(StructureGetChain(pStructure, chainIndex), resiIndex);
-      for(int j = 0; j < StructureGetChainCount(pStructure); ++j){
-        Chain* pChain = StructureGetChain(pStructure,j);
+    //build rotamers for surrounding residues
+    for(int ii=0; ii<IntArrayGetLength(&mutatedArray); ii+=2){
+      int chainIndex = IntArrayGet(&mutatedArray,ii);
+      int resiIndex = IntArrayGet(&mutatedArray,ii+1);
+      Residue *pResi1 = ChainGetResidue(StructureGetChain(&tempStruct, chainIndex), resiIndex);
+      for(int j = 0; j < StructureGetChainCount(&tempStruct); ++j){
+        Chain* pChain = StructureGetChain(&tempStruct,j);
         for(int k=0; k<ChainGetResidueCount(pChain); k++){
           Residue* pResi2 = ChainGetResidue(pChain,k);
           if(AtomArrayCalcMinDistance(&pResi1->atoms,&pResi2->atoms)<ENERGY_DISTANCE_CUTOFF){
             if(pResi2->designSiteType==Type_ResidueDesignType_Fixed){
-              ProteinSiteBuildWildtypeRotamersByBBdepRotLib(pStructure,j,k,pBBdepRotLib,atomParams,resiTopos);
-              ProteinSiteAddCrystalRotamerByBBdepRotLib(pStructure,j,k,resiTopos,pBBdepRotLib);
-              IntArrayAppend(&rotamersArray,j);
-              IntArrayAppend(&rotamersArray,k);
+              ProteinSiteBuildWildtypeRotamersByBBdepRotLib(&tempStruct,j,k,pBBdepRotLib,atomParams,resiTopos);
+              ProteinSiteAddCrystalRotamerByBBdepRotLib(&tempStruct,j,k,resiTopos,pBBdepRotLib);
+              IntArrayAppend(&rotamericArray,j);
+              IntArrayAppend(&rotamericArray,k);
             }
           }
         }
       }
     }
 
-    // optimization rotamers sequentially
+    //optimization rotamers sequentially
     printf("EvoEF Building mutation model %d, the following sites will be optimized:\n",mutantIndex+1);
-    IntArrayShow(&rotamersArray);
-    printf("\n");
-    for(int cycle=0; cycle<3; cycle++){
-      printf("optimization cycle %d ... \n",cycle+1);
-      for(int ii=0; ii<IntArrayGetLength(&rotamersArray); ii+=2){
-        int chainIndex = IntArrayGet(&rotamersArray, ii);
-        int resiIndex = IntArrayGet(&rotamersArray, ii+1);
-        ProteinSiteOptimizeRotamerWithBBdepRotLib(pStructure, chainIndex, resiIndex,pBBdepRotLib);
-        //ProteinSiteOptimizeRotamerLocallyWithBBdepRotLib(pStructure,chainIndex,resiIndex,1.0,pBBdepRotLib);
+    printf("chnIndex resIndex (both of them starts from zero on the chain)\n");
+    for(int ii=0;ii<IntArrayGetLength(&rotamericArray);ii+=2){
+      printf("%8d %8d\n",IntArrayGet(&rotamericArray,ii),IntArrayGet(&rotamericArray,ii+1));
+    }
+    for(int posIndex=0; posIndex<10; posIndex++){
+      printf("optimization cycle %d ... \n",posIndex+1);
+      for(int ii=0; ii<IntArrayGetLength(&rotamericArray); ii+=2){
+        int chainIndex = IntArrayGet(&rotamericArray, ii);
+        int resiIndex = IntArrayGet(&rotamericArray, ii+1);
+        ProteinSiteOptimizeRotamerWithBBdepRotLib(&tempStruct,chainIndex,resiIndex,pBBdepRotLib);
       }
     }
-    IntArrayDestroy(&mutantArray);
-    IntArrayDestroy(&rotamersArray);
+    IntArrayDestroy(&mutatedArray);
+    IntArrayDestroy(&rotamericArray);
     //remember to delete rotamers for previous mutant
-    StructureRemoveAllDesignSites(pStructure);
+    StructureRemoveAllDesignSites(&tempStruct);
 
     char modelfile[MAX_LENGTH_ONE_LINE_IN_FILE+1];
-    if(pdbid!=NULL)
-      sprintf(modelfile,"%s_Model_%d.pdb",pdbid,mutantIndex+1);
-    else
-      sprintf(modelfile,"EvoEF_Model_%d.pdb",mutantIndex+1);
+    if(pdbid!=NULL) sprintf(modelfile,"%s_Model_%04d.pdb",pdbid,mutantIndex+1);
+    else sprintf(modelfile,"EvoEF_Model_%04d.pdb",mutantIndex+1);
     FILE* pf=fopen(modelfile,"w");
     fprintf(pf,"REMARK EvoEF generated pdb file\n");
     fprintf(pf,"REMARK Output generated by EvoEF <BuildMutant>\n");
-    StructureShowInPDBFormat(pStructure,TRUE,pf);
+    StructureShowInPDBFormat(&tempStruct,TRUE,pf);
     fclose(pf);
+    StructureDestroy(&tempStruct);
   }
 
   return Success;
 }
 
 
-int NOVA_RepairStructure(Structure* pStructure, BBindRotamerLib* pBBindRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
+int EVOEF_RepairStructure(Structure* pStructure, BBindRotamerLib* pBBindRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
   for(int cycle=0; cycle<1; cycle++){
     printf("EvoEF Repairing PDB: optimization cycle %d ... \n",cycle+1);
     for(int i=0; i<StructureGetChainCount(pStructure); ++i){
@@ -828,7 +837,7 @@ int NOVA_RepairStructure(Structure* pStructure, BBindRotamerLib* pBBindRotLib, A
 }
 
 
-int NOVA_RepairStructureWithBBdepRotLib(Structure* pStructure, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
+int EVOEF_RepairStructureWithBBdepRotLib(Structure* pStructure, BBdepRotamerLib* pBBdepRotLib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
   for(int cycle=0; cycle<1; cycle++){
     printf("EvoEF Repairing PDB: optimization cycle %d ... \n",cycle+1);
     for(int i=0; i<StructureGetChainCount(pStructure); ++i){
@@ -877,7 +886,7 @@ int NOVA_RepairStructureWithBBdepRotLib(Structure* pStructure, BBdepRotamerLib* 
 }
 
 
-int NOVA_WriteStructureToFile(Structure* pStructure, char* pdbfile){
+int EVOEF_WriteStructureToFile(Structure* pStructure, char* pdbfile){
   FILE* pf=fopen(pdbfile,"w");
   if(pf!=NULL){
     StructureShowInPDBFormat(pStructure,TRUE,pf);
@@ -890,7 +899,7 @@ int NOVA_WriteStructureToFile(Structure* pStructure, char* pdbfile){
   return Success;
 }
 
-int NOVA_AddHydrogen(Structure* pStructure, char* pdbid){
+int EVOEF_AddHydrogen(Structure* pStructure, char* pdbid){
   //polar hydrogens are automatically added, so we just output the repaired structure
   char modelfile[MAX_LENGTH_ONE_LINE_IN_FILE+1];
   if(pdbid!=NULL){sprintf(modelfile,"%s_PolH.pdb",pdbid);}
@@ -904,7 +913,7 @@ int NOVA_AddHydrogen(Structure* pStructure, char* pdbid){
 }
 
 
-int NOVA_OptimizeHydrogen(Structure* pStructure, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
+int EVOEF_OptimizeHydrogen(Structure* pStructure, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
   for(int cycle=0; cycle<1; cycle++){
     printf("EvoEF Repairing PDB: optimization cycle %d ... \n",cycle+1);
     for(int i=0; i<StructureGetChainCount(pStructure); ++i){
@@ -936,7 +945,7 @@ int NOVA_OptimizeHydrogen(Structure* pStructure, AtomParamsSet* atomParams,ResiT
 }
 
 
-int NOVA_StructureComputeResidueInteractionWithFixedSurroundingResidues(Structure *pStructure, int chainIndex, int residueIndex){
+int EVOEF_StructureComputeResidueInteractionWithFixedSurroundingResidues(Structure *pStructure, int chainIndex, int residueIndex){
   double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]={0};
   EnergyTermInitialize(energyTerms);
   // if the structure is composed of several chains, the residue position could be different in the whole structure from that in the separate chain
@@ -1052,7 +1061,7 @@ int NOVA_StructureComputeResidueInteractionWithFixedSurroundingResidues(Structur
 //////////////////////////////////////////////////////////////////////////////
 //The following are new program functions
 //////////////////////////////////////////////////////////////////////////////
-int NOVA_ComputeRotamersEnergy(Structure* pStructure,BBindRotamerLib* pBBindRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
+int EVOEF_ComputeRotamersEnergy(Structure* pStructure,BBindRotamerLib* pBBindRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
   char energyfile[MAX_LENGTH_ONE_LINE_IN_FILE+1];
   sprintf(energyfile,"%s_rotenergy.txt",pdbid);
   FILE* fp=fopen(energyfile,"w");
@@ -1104,7 +1113,7 @@ int NOVA_ComputeRotamersEnergy(Structure* pStructure,BBindRotamerLib* pBBindRotL
 }
 
 
-int NOVA_ComputeWildtypeRotamersEnergy(Structure* pStructure,BBindRotamerLib* pBBindRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
+int EVOEF_ComputeWildtypeRotamersEnergy(Structure* pStructure,BBindRotamerLib* pBBindRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
   char energyfile[MAX_LENGTH_ONE_LINE_IN_FILE+1];
   sprintf(energyfile,"%s_rotenergy.txt",pdbid);
   FILE* fp=fopen(energyfile,"w");
@@ -1156,7 +1165,7 @@ int NOVA_ComputeWildtypeRotamersEnergy(Structure* pStructure,BBindRotamerLib* pB
 }
 
 
-int NOVA_StructureFindInterfaceResidues(Structure *pStructure, double cutoff,char* outputfile){
+int EVOEF_StructureFindInterfaceResidues(Structure *pStructure, double cutoff,char* outputfile){
   if(pStructure->chainNum < 2){
     printf("there is only one chain in the whole structure, no protein-protein interface found\n");
     exit(ValueError);
@@ -1279,7 +1288,7 @@ int StructureCalcPhiPsi(Structure* pStructure){
   return Success;
 }
 
-int NOVA_StructureShowPhiPsi(Structure* pStructure,char* phipsifile){
+int EVOEF_StructureShowPhiPsi(Structure* pStructure,char* phipsifile){
   FILE* fout=NULL;
   if(phipsifile==NULL) fout=stdout;
   else fout=fopen(phipsifile,"w");
@@ -1298,7 +1307,7 @@ int NOVA_StructureShowPhiPsi(Structure* pStructure,char* phipsifile){
 }
 
 
-int NOVA_ComputeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pBBdepRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
+int EVOEF_ComputeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pBBdepRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
   char energyfile[MAX_LENGTH_ONE_LINE_IN_FILE+1];
   sprintf(energyfile,"%s_rotenergy.txt",pdbid);
   FILE* fp=fopen(energyfile,"w");
@@ -1350,7 +1359,7 @@ int NOVA_ComputeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLi
 }
 
 
-int NOVA_ComputeWildtypeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pBBdepRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
+int EVOEF_ComputeWildtypeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pBBdepRotLib,AAppTable* pAAppTable,RamaTable* pRama,AtomParamsSet* atomParams,ResiTopoSet* resiTopos,char* pdbid){
   char energyfile[MAX_LENGTH_ONE_LINE_IN_FILE+1];
   sprintf(energyfile,"%s_rotenergy.txt",pdbid);
   FILE* fp=fopen(energyfile,"w");
@@ -1403,7 +1412,7 @@ int NOVA_ComputeWildtypeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepR
 
 
 
-int NOVA_CheckRotamerInBBindRotLib(Structure* pStructure,BBindRotamerLib* pBBindRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid){
+int EVOEF_CheckRotamerInBBindRotLib(Structure* pStructure,BBindRotamerLib* pBBindRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid){
   char FILE_TORSION[MAX_LENGTH_FILE_NAME+1];
   sprintf(FILE_TORSION,"%s_torsionrecover.txt",pdbid);
   FILE* pf=fopen(FILE_TORSION,"w");  for(int i=0;i<StructureGetChainCount(pStructure);i++){
@@ -1429,7 +1438,7 @@ int NOVA_CheckRotamerInBBindRotLib(Structure* pStructure,BBindRotamerLib* pBBind
 }
 
 
-int NOVA_CheckRotamerInBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pBBdepRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid){
+int EVOEF_CheckRotamerInBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pBBdepRotLib,ResiTopoSet* pTopos,double cutoff,char* pdbid){
   char FILE_TORSION[MAX_LENGTH_FILE_NAME+1];
   sprintf(FILE_TORSION,"%s_torsionrecover.txt",pdbid);
   FILE* pf=fopen(FILE_TORSION,"w");
@@ -1456,7 +1465,7 @@ int NOVA_CheckRotamerInBBdepRotLib(Structure* pStructure,BBdepRotamerLib* pBBdep
 }
 
 
-int NOVA_GetResiMinRmsdRotFromLab(Structure* pStructure,char* pdbid){
+int EVOEF_GetResiMinRmsdRotFromLab(Structure* pStructure,char* pdbid){
   char FILE_RMSD[MAX_LENGTH_FILE_NAME+1];
   sprintf(FILE_RMSD,"%s_minrmsd.txt",pdbid);
   FILE* pf=fopen(FILE_RMSD,"w");

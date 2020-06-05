@@ -183,7 +183,7 @@ int GenerateParameterAndTopologyFromMol2(char* mol2file,char* parfile,char* topf
 int main(int argc, char* argv[]){
   clock_t timestart = clock();
   setvbuf(stdout, NULL, _IONBF, 0);
-  //deal with filepaths related to program NOVA
+  //deal with filepaths related to program EVOEF
   //you MUST leave this paragraph here to make sure the EvoEF2 program can find the correct path and files
   ExtractPathAndName(argv[0], PROGRAM_PATH, PROGRAM_NAME);
   sprintf(FILE_AMINOATOMPAR,"%s/library/param_charmm19_lk.prm",PROGRAM_PATH);
@@ -194,7 +194,7 @@ int main(int argc, char* argv[]){
   sprintf(FILE_WEIGHT_READ,"%s/wread/weight_EvoEF2.txt",PROGRAM_PATH);
 
   //show interface
-  NOVA_interface();
+  EVOEF_interface();
   
   //char *cmdname = "RepairStructure";
   //char *cmdname = "ComputeStability";
@@ -229,22 +229,22 @@ int main(int argc, char* argv[]){
     switch(opt){
       //deal with short options
       case 'h':
-        NOVA_help();
+        EVOEF_help();
         exit(Success);
       case 'v':
-        NOVA_version();
+        EVOEF_version();
         exit(Success);
         // deal with long options
       case 1:
-        NOVA_help();
+        EVOEF_help();
         exit(Success);
       case 2:
-        NOVA_version();
+        EVOEF_version();
         exit(Success);
       case 3:
         cmdname = optarg;
         if(!CheckCommandName(cmdname)){
-          printf("command %s is not supported, NOVA exits\n", cmdname);
+          printf("command %s is not supported, EVOEF exits\n", cmdname);
           exit(ValueError);
         }
         else printf("command %s works\n", cmdname);
@@ -260,7 +260,7 @@ int main(int argc, char* argv[]){
         for(int i=0; i<(int)strlen(split_part1); i++){
           char tmp[2]={split_part1[i],'\0'};
           if(strstr(split_part2,tmp)!=NULL){
-            printf("the split two parts contain identical chains,please check, NOVA exits\n");
+            printf("the split two parts contain identical chains,please check, EVOEF exits\n");
             exit(FormatError);
           }
         }
@@ -351,7 +351,7 @@ int main(int argc, char* argv[]){
         break;
       default:
         char errMsg[MAX_LENGTH_ERR_MSG+1];
-        sprintf(errMsg, "in file %s function %s() line %d, unknown option, NOVA exits", __FILE__, __FUNCTION__, __LINE__);
+        sprintf(errMsg, "in file %s function %s() line %d, unknown option, EVOEF exits", __FILE__, __FUNCTION__, __LINE__);
         TraceError(errMsg, ValueError);
         exit(ValueError);
         break;
@@ -401,7 +401,7 @@ int main(int argc, char* argv[]){
   StructureCreate(&structure);
   //read in protein scaffold with PDB format
   StructureConfig(&structure, PDB, &atomParam, &resiTopo);
-  printf("protein structure file %s.pdb was successfully read by NOVA\n", PDBID);
+  printf("protein structure file %s.pdb was successfully read by EVOEF\n", PDBID);
   //read in small molecules: generate parameters and read structure with mol2 format
   if(FLAG_PROT_LIG==TRUE || FLAG_ENZYME==TRUE){
     GenerateParameterAndTopologyFromMol2(MOL2,LIG_ATOMPAR,LIG_TOPFILE);
@@ -456,25 +456,25 @@ int main(int argc, char* argv[]){
       BBdepRotamerLib bbrotlib;
       BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
       double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]={0};
-      NOVA_ComputeStabilityWithBBdepRotLib(&structure,&aapptable,&ramatable,&bbrotlib,energyTerms);
+      EVOEF_ComputeStabilityWithBBdepRotLib(&structure,&aapptable,&ramatable,&bbrotlib,energyTerms);
       BBdepRotamerLibDestroy(&bbrotlib);
     }
     else{
       double energyTerms[MAX_EVOEF_ENERGY_TERM_NUM]={0};
-      NOVA_ComputeStability(&structure,&aapptable,&ramatable,energyTerms);
+      EVOEF_ComputeStability(&structure,&aapptable,&ramatable,energyTerms);
     }
   }
   else if(!strcmp(cmdname, "ComputeBinding")){
     if(StructureGetChainCount(&structure)<=2){
-      NOVA_ComputeBinding(&structure);
+      EVOEF_ComputeBinding(&structure);
     }
     else{
       if(chainSplitFlag==FALSE){
-        NOVA_ComputeBinding(&structure);
+        EVOEF_ComputeBinding(&structure);
       }
       else{
-        //NOVA_ComputeBindingWithSplitting(&structure,split_part1,split_part2);
-        NOVA_ComputeBindingWithSplittingNew(&structure,split_part1,split_part2);
+        //EVOEF_ComputeBindingWithSplitting(&structure,split_part1,split_part2);
+        EVOEF_ComputeBindingWithSplittingNew(&structure,split_part1,split_part2);
       }
     }
   }
@@ -486,13 +486,13 @@ int main(int argc, char* argv[]){
     if(FLAG_BBDEP_ROTLIB==TRUE){
       BBdepRotamerLib bbrotlib;
       BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-      NOVA_RepairStructureWithBBdepRotLib(&structure, &bbrotlib, &atomParam, &resiTopo,PDBID);
+      EVOEF_RepairStructureWithBBdepRotLib(&structure, &bbrotlib, &atomParam, &resiTopo,PDBID);
       BBdepRotamerLibDestroy(&bbrotlib);
     }
     else{
       BBindRotamerLib rotlib;
       BBindRotamerLibCreate(&rotlib,FILE_ROTLIB);
-      NOVA_RepairStructure(&structure, &rotlib, &atomParam, &resiTopo,PDBID);
+      EVOEF_RepairStructure(&structure, &rotlib, &atomParam, &resiTopo,PDBID);
       BBindRotamerLibDestroy(&rotlib);
     }
   }
@@ -504,13 +504,13 @@ int main(int argc, char* argv[]){
     if(FLAG_BBDEP_ROTLIB==TRUE){
       BBdepRotamerLib bbrotlib;
       BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-      NOVA_BuildMutantWithBBdepRotLib(&structure,MUTANT_FILE,&bbrotlib,&atomParam,&resiTopo,PDBID);
+      EVOEF_BuildMutantWithBBdepRotLib(&structure,MUTANT_FILE,&bbrotlib,&atomParam,&resiTopo,PDBID);
       BBdepRotamerLibDestroy(&bbrotlib);
     }
     else{
       BBindRotamerLib rotlib;
       BBindRotamerLibCreate(&rotlib,FILE_ROTLIB);
-      NOVA_BuildMutant(&structure, MUTANT_FILE, &rotlib, &atomParam, &resiTopo,PDBID);
+      EVOEF_BuildMutant(&structure, MUTANT_FILE, &rotlib, &atomParam, &resiTopo,PDBID);
       BBindRotamerLibDestroy(&rotlib);
     }
   }
@@ -520,7 +520,7 @@ int main(int argc, char* argv[]){
       for(int j=0; j<ChainGetResidueCount(pChain); ++j){
         Residue* pResidue=ChainGetResidue(pChain,j);
         printf("residue %s%d%s energy details:\n",ChainGetName(pChain), ResidueGetPosInChain(pResidue), ResidueGetName(pResidue));
-        NOVA_StructureComputeResidueInteractionWithFixedSurroundingResidues(&structure, i, j);
+        EVOEF_StructureComputeResidueInteractionWithFixedSurroundingResidues(&structure, i, j);
       }
     }
   }
@@ -533,10 +533,10 @@ int main(int argc, char* argv[]){
       BBdepRotamerLib bbrotlib;
       BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
       if(FLAG_WILDTYPE_ONLY==TRUE){
-        NOVA_ComputeWildtypeRotamersEnergyByBBdepRotLib(&structure,&bbrotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
+        EVOEF_ComputeWildtypeRotamersEnergyByBBdepRotLib(&structure,&bbrotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
       }
       else{
-        NOVA_ComputeRotamersEnergyByBBdepRotLib(&structure,&bbrotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
+        EVOEF_ComputeRotamersEnergyByBBdepRotLib(&structure,&bbrotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
       }
       BBdepRotamerLibDestroy(&bbrotlib);
     }
@@ -544,10 +544,10 @@ int main(int argc, char* argv[]){
       BBindRotamerLib rotlib;
       BBindRotamerLibCreate(&rotlib,FILE_ROTLIB);
       if(FLAG_WILDTYPE_ONLY==TRUE){
-        NOVA_ComputeWildtypeRotamersEnergy(&structure,&rotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
+        EVOEF_ComputeWildtypeRotamersEnergy(&structure,&rotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
       }
       else{
-        NOVA_ComputeRotamersEnergy(&structure,&rotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
+        EVOEF_ComputeRotamersEnergy(&structure,&rotlib,&aapptable,&ramatable,&atomParam,&resiTopo,PDBID);
       }
       BBindRotamerLibDestroy(&rotlib);
     }
@@ -557,14 +557,14 @@ int main(int argc, char* argv[]){
     StructureGetAminoAcidComposition(&structure,aas);
   }
   else if(!strcmp(cmdname,"OptimizeHydrogen")){
-    NOVA_OptimizeHydrogen(&structure,&atomParam, &resiTopo,PDBNAME);
+    EVOEF_OptimizeHydrogen(&structure,&atomParam, &resiTopo,PDBNAME);
   }
   else if(!strcmp(cmdname,"AddHydrogen")){
-    NOVA_AddHydrogen(&structure,PDBID);
+    EVOEF_AddHydrogen(&structure,PDBID);
   }
   else if(!strcmp(cmdname,"FindInterfaceResidue")){
     sprintf(INTERFACE_RESIDUE_FILE,"%s_interfaceresidue.txt",PDBID);
-    NOVA_StructureFindInterfaceResidues(&structure,PPI_DIST_CUTOFF,INTERFACE_RESIDUE_FILE);
+    EVOEF_StructureFindInterfaceResidues(&structure,PPI_DIST_CUTOFF,INTERFACE_RESIDUE_FILE);
   }
   else if(!strcmp(cmdname, "MakeLigandEnsemble")){
     if(FLAG_BBDEP_ROTLIB==TRUE){
@@ -775,19 +775,19 @@ int main(int argc, char* argv[]){
   else if(!strcmp(cmdname,"GetPhiPsi")){
     char PHI_PSI_FILE[MAX_LENGTH_ONE_LINE_IN_FILE+1]="";
     sprintf(PHI_PSI_FILE,"%s_phipsi.txt",PDBID);
-    NOVA_StructureShowPhiPsi(&structure,PHI_PSI_FILE);
+    EVOEF_StructureShowPhiPsi(&structure,PHI_PSI_FILE);
   }
   else if(!strcmp(cmdname,"CheckResiInLab")){
     if(FLAG_BBDEP_ROTLIB==TRUE){
       BBdepRotamerLib bbrotlib;
       BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-      NOVA_CheckRotamerInBBdepRotLib(&structure,&bbrotlib,&resiTopo,TORSION_DEVIATION_CUTOFF,PDBID);
+      EVOEF_CheckRotamerInBBdepRotLib(&structure,&bbrotlib,&resiTopo,TORSION_DEVIATION_CUTOFF,PDBID);
       BBdepRotamerLibDestroy(&bbrotlib);
     }
     else{
       BBindRotamerLib rotlib;
       BBindRotamerLibCreate(&rotlib,FILE_ROTLIB);
-      NOVA_CheckRotamerInBBindRotLib(&structure,&rotlib,&resiTopo,TORSION_DEVIATION_CUTOFF,PDBID);
+      EVOEF_CheckRotamerInBBindRotLib(&structure,&rotlib,&resiTopo,TORSION_DEVIATION_CUTOFF,PDBID);
       BBindRotamerLibDestroy(&rotlib);
     }
   }
@@ -804,10 +804,10 @@ int main(int argc, char* argv[]){
       StructureGenerateWildtypeRotamers(&structure,&rotlib,&atomParam,&resiTopo,DES_CHAINS);
       BBindRotamerLibDestroy(&rotlib);
     }
-    NOVA_GetResiMinRmsdRotFromLab(&structure,PDBID);
+    EVOEF_GetResiMinRmsdRotFromLab(&structure,PDBID);
   }
   else{
-    printf("unknown command name: %s\n, NOVA exits\n", cmdname);
+    printf("unknown command name: %s\n, EVOEF exits\n", cmdname);
     exit(ValueError);
   }
 
