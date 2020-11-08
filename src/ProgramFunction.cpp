@@ -537,11 +537,14 @@ int EVOEF_ComputeBindingWithSplittingNew(Structure *pStructure,char split1[], ch
 //this function is used to build the structure model of mutations
 int EVOEF_BuildMutant(Structure* pStructure, char* mutantfile, BBindRotamerLib* rotlib, AtomParamsSet* atomParams,ResiTopoSet* resiTopos, char* pdbid){
   FileReader fr;
-  FileReaderCreate(&fr, mutantfile);
+  if(FAILED(FileReaderCreate(&fr, mutantfile))){
+    printf("in file %s line %d, mutant file not found\n",__FILE__,__LINE__);
+    exit(IOError);
+  }
   int mutantcount = FileReaderGetLineCount(&fr);
   if(mutantcount<=0){
-    printf("There is no mutant found in the mutant file\n");
-    return DataNotExistError;
+    printf("in file %s line %d, no mutation found in the mutant file\n",__FILE__,__LINE__);
+    exit(DataNotExistError);
   }
 
   StringArray* mutants = (StringArray*)malloc(sizeof(StringArray)*mutantcount);

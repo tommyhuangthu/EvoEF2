@@ -199,7 +199,7 @@ int main(int argc, char* argv[]){
   //char *cmdname = "RepairStructure";
   //char *cmdname = "ComputeStability";
   //char *cmdname = "ComputeBinding";
-  //char *cmdname = "BuildMutant";
+  char *cmdname = "BuildMutant";
   //char *cmdname = "OptimizeHydrogen";
   //char *cmdname = "ComputeResiEnergy";
   //char *cmdname = "AddHydrogen";
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]){
   //char *cmdname = "ScreenLigandEnsemble";
   //char *cmdname = "ComputeEnergyMatrix";
   //char *cmdname = "ComputeEvolutionScore";
-  char *cmdname = "ProteinDesign";
+  //char *cmdname = "ProteinDesign";
   //char *cmdname = "ProtLigDesign";
   //char *cmdname = "EnzymeDesign";
   //char *cmdname = "OptimizeWeight";
