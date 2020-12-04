@@ -1090,17 +1090,6 @@ int EVOEF_ComputeRotamersEnergy(Structure* pStructure,BBindRotamerLib* pBBindRot
           }
         }
       }
-      else if(FLAG_ENZYME==TRUE || FLAG_PROT_LIG==TRUE){
-        Residue* pSmallMol=NULL;
-        StructureFindSmallMol(pStructure,&pSmallMol);
-        if(AtomArrayCalcMinDistance(&pResi->atoms,&pSmallMol->atoms)<ENERGY_DISTANCE_CUTOFF){
-          ProteinSiteBuildAllRotamers(pStructure,i,j,pBBindRotLib,atomParams,resiTopos);
-          if(FLAG_ADD_CRYSTAL_ROT==TRUE) ProteinSiteAddCrystalRotamer(pStructure,i,j,resiTopos);
-          if(FLAG_EXPAND_HYDROXYL_ROT) ProteinSiteExpandHydroxylRotamers(pStructure,i,j,resiTopos);
-          ProteinSiteCalcRotamersEnergy(pStructure,pAAppTable,pRama,i,j,fp);
-          ProteinSiteRemoveDesignSite(pStructure,i,j);
-        }
-      }
       else{
         ProteinSiteBuildAllRotamers(pStructure,i,j,pBBindRotLib,atomParams,resiTopos);
         if(FLAG_ADD_CRYSTAL_ROT==TRUE) ProteinSiteAddCrystalRotamer(pStructure,i,j,resiTopos);
@@ -1140,17 +1129,6 @@ int EVOEF_ComputeWildtypeRotamersEnergy(Structure* pStructure,BBindRotamerLib* p
               ProteinSiteRemoveDesignSite(pStructure,i,j);
             }
           }
-        }
-      }
-      else if(FLAG_ENZYME==TRUE || FLAG_PROT_LIG==TRUE){
-        Residue* pSmallMol=NULL;
-        StructureFindSmallMol(pStructure,&pSmallMol);
-        if(AtomArrayCalcMinDistance(&pResi->atoms,&pSmallMol->atoms)<ENERGY_DISTANCE_CUTOFF){
-          ProteinSiteBuildWildtypeRotamers(pStructure,i,j,pBBindRotLib,atomParams,resiTopos);
-          if(FLAG_ADD_CRYSTAL_ROT==TRUE) ProteinSiteAddCrystalRotamer(pStructure,i,j,resiTopos);
-          if(FLAG_EXPAND_HYDROXYL_ROT) ProteinSiteExpandHydroxylRotamers(pStructure,i,j,resiTopos);
-          ProteinSiteCalcRotamersEnergy(pStructure,pAAppTable,pRama,i,j,fp);
-          ProteinSiteRemoveDesignSite(pStructure,i,j);
         }
       }
       else{
@@ -1336,17 +1314,6 @@ int EVOEF_ComputeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdepRotamerL
           }
         }
       }
-      else if(FLAG_ENZYME==TRUE || FLAG_PROT_LIG==TRUE){
-        Residue* pSmallMol=NULL;
-        StructureFindSmallMol(pStructure,&pSmallMol);
-        if(AtomArrayCalcMinDistance(&pResi->atoms,&pSmallMol->atoms)<ENERGY_DISTANCE_CUTOFF){
-          ProteinSiteBuildAllRotamersByBBdepRotLib(pStructure,i,j,pBBdepRotLib,atomParams,resiTopos);
-          if(FLAG_ADD_CRYSTAL_ROT==TRUE) ProteinSiteAddCrystalRotamerByBBdepRotLib(pStructure,i,j,resiTopos,pBBdepRotLib);
-          if(FLAG_EXPAND_HYDROXYL_ROT) ProteinSiteExpandHydroxylRotamers(pStructure,i,j,resiTopos);
-          ProteinSiteCalcRotamersEnergy(pStructure,pAAppTable,pRama,i,j,fp);
-          ProteinSiteRemoveDesignSite(pStructure,i,j);
-        }
-      }
       else{
         ProteinSiteBuildAllRotamersByBBdepRotLib(pStructure,i,j,pBBdepRotLib,atomParams,resiTopos);
         if(FLAG_ADD_CRYSTAL_ROT==TRUE) ProteinSiteAddCrystalRotamerByBBdepRotLib(pStructure,i,j,resiTopos,pBBdepRotLib);
@@ -1386,17 +1353,6 @@ int EVOEF_ComputeWildtypeRotamersEnergyByBBdepRotLib(Structure* pStructure,BBdep
               ProteinSiteRemoveDesignSite(pStructure,i,j);
             }
           }
-        }
-      }
-      else if(FLAG_ENZYME==TRUE || FLAG_PROT_LIG==TRUE){
-        Residue* pSmallMol=NULL;
-        StructureFindSmallMol(pStructure,&pSmallMol);
-        if(AtomArrayCalcMinDistance(&pResi->atoms,&pSmallMol->atoms)<ENERGY_DISTANCE_CUTOFF){
-          ProteinSiteBuildWildtypeRotamersByBBdepRotLib(pStructure,i,j,pBBdepRotLib,atomParams,resiTopos);
-          if(FLAG_ADD_CRYSTAL_ROT==TRUE) ProteinSiteAddCrystalRotamerByBBdepRotLib(pStructure,i,j,resiTopos,pBBdepRotLib);
-          if(FLAG_EXPAND_HYDROXYL_ROT) ProteinSiteExpandHydroxylRotamers(pStructure,i,j,resiTopos);
-          ProteinSiteCalcRotamersEnergy(pStructure,pAAppTable,pRama,i,j,fp);
-          ProteinSiteRemoveDesignSite(pStructure,i,j);
         }
       }
       else{

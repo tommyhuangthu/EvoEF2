@@ -122,8 +122,6 @@ BOOL FLAG_PHYSICS=TRUE;
 //design type
 BOOL FLAG_MONOMER=TRUE;
 BOOL FLAG_PPI=FALSE;
-BOOL FLAG_PROT_LIG=FALSE;
-BOOL FLAG_ENZYME=FALSE;
 BOOL FLAG_WILDTYPE_ONLY=FALSE;
 
 //backbone dependent potential
@@ -150,22 +148,19 @@ struct option long_opts[] = {
   {"split",         required_argument, NULL,  5},
   {"mutant_file",   required_argument, NULL,  6},
   {"bbdep",         required_argument, NULL,  7},
-  {"addcrystal",    required_argument, NULL,  8},
+  {"use_input_sc",  required_argument, NULL,  8},
   {"ppi_cutoff",    required_argument, NULL,  9},
-  {"bind_radius",   required_argument, NULL, 10},
   {"evolution",     no_argument,       NULL, 11},
   {"physics",       no_argument,       NULL, 12},
   {"monomer",       no_argument,       NULL, 13},
-  {"ppi",           no_argument,       NULL, 14},
-  {"protlig",       no_argument,       NULL, 15},
-  {"enzyme",        no_argument,       NULL, 16},
+  {"ppint",         no_argument,       NULL, 14},
   {"design_chains", required_argument, NULL, 17},
   {"mol2",          required_argument, NULL, 18},
   {"expand_hydroxyl",required_argument,NULL, 19},
   {"xdeviation",    required_argument, NULL, 20},
   {"wread",        required_argument,  NULL, 21},
   {"wwrite",       required_argument,  NULL, 22},
-  {"wildtype",     required_argument,  NULL, 23},
+  {"wildtype_only", required_argument, NULL, 23},
   {"rotlib",       required_argument,  NULL, 24},
   {NULL,            no_argument,       NULL, 0}
 };
@@ -196,27 +191,20 @@ int main(int argc, char* argv[]){
   //show interface
   EVOEF_interface();
   
+  char* cmdname="";
   //char *cmdname = "RepairStructure";
   //char *cmdname = "ComputeStability";
   //char *cmdname = "ComputeBinding";
-  char *cmdname = "BuildMutant";
+  //char *cmdname = "BuildMutant";
   //char *cmdname = "OptimizeHydrogen";
   //char *cmdname = "ComputeResiEnergy";
   //char *cmdname = "AddHydrogen";
   //char *cmdname = "FindInterfaceResidue";
   //char *cmdname = "ComputeRotamersEnergy";
-  //char *cmdname = "ComputeWtRotamersEnergy";
   //char *cmdname = "ShowResiComposition";
-  //char *cmdname = "MakeLigandEnsemble";
-  //char *cmdname = "ScreenLigandEnsemble";
-  //char *cmdname = "ComputeEnergyMatrix";
-  //char *cmdname = "ComputeEvolutionScore";
   //char *cmdname = "ProteinDesign";
-  //char *cmdname = "ProtLigDesign";
-  //char *cmdname = "EnzymeDesign";
   //char *cmdname = "OptimizeWeight";
   //char* cmdname = "GetPhiPsi";
-  //char* cmdname = "TestBBdepRotLib";
   //char* cmdname = "CheckResiInLab";
   //char* cmdname = "SidechainRepack";
   //char* cmdname = "GetResiMinRMSD";
@@ -290,9 +278,6 @@ int main(int argc, char* argv[]){
       case 9:
         PPI_DIST_CUTOFF = atof(optarg);
         break;
-      case 10:
-        BIND_RADIUS = atof(optarg);
-        break;
       case 11:
         FLAG_EVOLUTION = TRUE;
         break;
@@ -302,25 +287,9 @@ int main(int argc, char* argv[]){
       case 13:
         FLAG_MONOMER  = TRUE;
         FLAG_PPI      = FALSE;
-        FLAG_PROT_LIG = FALSE;
-        FLAG_ENZYME   = FALSE;
         break;
       case 14:
         FLAG_PPI      = TRUE;
-        FLAG_MONOMER  = FALSE;
-        FLAG_PROT_LIG = FALSE;
-        FLAG_ENZYME   = FALSE;
-        break;
-      case 15:
-        FLAG_PROT_LIG = TRUE;
-        FLAG_PPI      = FALSE;
-        FLAG_MONOMER  = FALSE;
-        FLAG_ENZYME   = FALSE;
-        break;
-      case 16:
-        FLAG_ENZYME   = TRUE;
-        FLAG_PROT_LIG = FALSE;
-        FLAG_PPI      = FALSE;
         FLAG_MONOMER  = FALSE;
         break;
       case 17:
@@ -401,14 +370,6 @@ int main(int argc, char* argv[]){
   StructureCreate(&structure);
   //read in protein scaffold with PDB format
   StructureConfig(&structure, PDB, &atomParam, &resiTopo);
-  printf("protein structure file %s.pdb was successfully read by EVOEF\n", PDBID);
-  //read in small molecules: generate parameters and read structure with mol2 format
-  if(FLAG_PROT_LIG==TRUE || FLAG_ENZYME==TRUE){
-    GenerateParameterAndTopologyFromMol2(MOL2,LIG_ATOMPAR,LIG_TOPFILE);
-    AtomParameterRead(&atomParam,LIG_ATOMPAR);
-    ResiTopoSetRead(&resiTopo,LIG_TOPFILE);
-    StructureConfigLigand(&structure,MOL2,&atomParam,&resiTopo);
-  }
 
   ///////////////////////////////////
   //read in the energy weights
@@ -426,13 +387,11 @@ int main(int argc, char* argv[]){
   //set design chains
   if(strcmp(DES_CHAINS,"")==0){
     strcpy(DES_CHAINS,ChainGetName(StructureGetChain(&structure,0)));
-    printf("no chains was designated for design, the 1st chain %s was selected by default\n",DES_CHAINS);
   }
   else{
     printf("protein chains %s were selected for design by default\n",DES_CHAINS);
   }
 
-  printf("current rotlib: %s\n", FILE_ROTLIB);
 
 
   //calculate phi and psi angles for protein residues
@@ -566,64 +525,6 @@ int main(int argc, char* argv[]){
     sprintf(INTERFACE_RESIDUE_FILE,"%s_interfaceresidue.txt",PDBID);
     EVOEF_StructureFindInterfaceResidues(&structure,PPI_DIST_CUTOFF,INTERFACE_RESIDUE_FILE);
   }
-  else if(!strcmp(cmdname, "MakeLigandEnsemble")){
-    if(FLAG_BBDEP_ROTLIB==TRUE){
-      BBdepRotamerLib bbrotlib;
-      BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-      StructureGenerateSpecifiedProteinRotamersByBBdepRotLib(&structure,&bbrotlib,&atomParam,&resiTopo,FILE_SPECIFIED_SITES);
-      BBdepRotamerLibDestroy(&bbrotlib);
-    }
-    else{
-      BBindRotamerLib rotlib;
-      BBindRotamerLibCreate(&rotlib, FILE_ROTLIB);
-      StructureGenerateSpecifiedProteinRotamers(&structure,&rotlib,&atomParam,&resiTopo,FILE_SPECIFIED_SITES);
-      BBindRotamerLibDestroy(&rotlib);
-    }
-    AAppTable aapptable;
-    RamaTable ramatable;
-    AApropensityTableReadFromFile(&aapptable,FILE_AAPROPENSITY);
-    RamaTableReadFromFile(&ramatable,FILE_RAMACHANDRAN);
-    StructureShowDesignSites(&structure, stdout);
-    StructureGenerateSmallMolRotamers(&structure,FILE_CATALYTIC_CONSTRAINT,FILE_LIG_PLACEMENT);
-    StructureWriteSmallMolRotamers(&structure,FILE_LIG_ENSEMBLE);
-    StructureShowDesignSites(&structure, stdout);
-  }
-  else if(!strcmp(cmdname,"ScreenLigandEnsemble")){
-    //StructureReadSmallMolRotamers(&structure,&resiTopo,FILE_LIG_ENSEMBLE);
-    //StructureSmallmolOrientationScreen(&structure,&resiTopo,"./cel5a/ligands.pdb","./cel5a/ligands_orientaion.pdb","./cel5a/orientation.txt");
-    //StructureReadSmallMolRotamers(&structure,&resiTopo,"./cel5a/ligands.pdb");
-    Residue* pSmallmol=NULL;
-    StructureFindSmallMol(&structure,&pSmallmol);
-    //AnalyzeSmallMolRotamers(FILE_LIG_ENSEMBLE,pSmallmol);
-    SmallMolRotamersGetBothHighRankOfBackboneVdwAndInternalVdw(FILE_LIG_ENSEMBLE,FILE_LIG_ENSEMBLE_TOPVDW,0.25);
-    ScreenSmallmolRotamersByRMSD(FILE_LIG_ENSEMBLE_TOPVDW,FILE_LIG_ENSEMBLE_RMSDSCREEN,0.05);
-    //StructureWriteSmallMolRotamers(&structure,"design/enzyme/IT1647/ligands_screen.pdb");
-  }
-  else if(!strcmp(cmdname, "MakeSelfEnergyMatrix")){
-    if(FLAG_BBDEP_ROTLIB==TRUE){
-      BBdepRotamerLib bbrotlib;
-      BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-      StructureGenerateSpecifiedProteinRotamersByBBdepRotLib(&structure,&bbrotlib,&atomParam,&resiTopo,FILE_SPECIFIED_SITES);
-      StructureGenerateBindingSiteRotamersByBBdepRotLib(&structure,&bbrotlib,&atomParam,&resiTopo,BIND_RADIUS);
-      BBdepRotamerLibDestroy(&bbrotlib);
-    }
-    else{
-      BBindRotamerLib rotlib;
-      BBindRotamerLibCreate(&rotlib, FILE_ROTLIB);
-      StructureGenerateSpecifiedProteinRotamers(&structure,&rotlib,&atomParam,&resiTopo,FILE_SPECIFIED_SITES);
-      StructureGenerateBindingSiteRotamers(&structure,&rotlib,&atomParam,&resiTopo,BIND_RADIUS);
-      BBindRotamerLibDestroy(&rotlib);
-    }
-    if(FLAG_PROT_LIG==TRUE || FLAG_ENZYME==TRUE){
-      StructureReadSmallMolRotamers(&structure,&resiTopo,FILE_LIG_ENSEMBLE);
-    }
-    AAppTable aapptable;
-    RamaTable ramatable;
-    AApropensityTableReadFromFile(&aapptable,FILE_AAPROPENSITY);
-    RamaTableReadFromFile(&ramatable,FILE_RAMACHANDRAN);
-    StructureShowDesignSites(&structure, stdout);
-    SelfEnergyGenerateWithBBdepEnergy(&structure,&aapptable,&ramatable,FILE_SELF_ENERGY);
-  }
   else if(!strcmp(cmdname,"SidechainRepack")){
     if(FLAG_BBDEP_ROTLIB==TRUE){
       BBdepRotamerLib bbrotlib;
@@ -637,8 +538,6 @@ int main(int argc, char* argv[]){
       StructureGenerateWildtypeRotamers(&structure,&rotlib,&atomParam,&resiTopo,DES_CHAINS);
       BBindRotamerLibDestroy(&rotlib);
     }
-    //ProteinSiteWriteRotamers(&structure,0,17,"1acc_a17_bbdeprots.pdb");
-    //ProteinSiteWriteRotamers(&structure,0,17,"1acc_a17_bbindrots.pdb");
     AAppTable aapptable;
     RamaTable ramatable;
     AApropensityTableReadFromFile(&aapptable,FILE_AAPROPENSITY);
@@ -652,8 +551,6 @@ int main(int argc, char* argv[]){
     RotamerListWrite(&rotList,ROT_LIST_SEC);
     RotamerListRead(&rotList,ROT_LIST_SEC);
     StructureShowDesignSitesAfterRotamerDelete(&structure,&rotList,stdout);
-    //MonteCarloOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-    //ReannealingOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
     SimulatedAnnealingOptimizationForSCP(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
   }
 
@@ -684,93 +581,11 @@ int main(int argc, char* argv[]){
     RotamerListWrite(&rotList,ROT_LIST_SEC);
     RotamerListRead(&rotList,ROT_LIST_SEC);
     StructureShowDesignSitesAfterRotamerDelete(&structure,&rotList,stdout);
-    //MonteCarloOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-    //ReannealingOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
     SimulatedAnnealingOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-  }
-  else if(!strcmp(cmdname, "ProtLigDesign")){
-    if(FLAG_BBDEP_ROTLIB==TRUE){
-      BBdepRotamerLib bbrotlib;
-      BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-      StructureGenerateAllRotamersByBBdepRotLib(&structure,&bbrotlib,&atomParam,&resiTopo,DES_CHAINS);
-      BBdepRotamerLibDestroy(&bbrotlib);
-    }
-    else{
-      BBindRotamerLib rotlib;
-      BBindRotamerLibCreate(&rotlib, FILE_ROTLIB);
-      StructureGenerateAllRotamers(&structure,&rotlib,&atomParam,&resiTopo,DES_CHAINS);
-      BBindRotamerLibDestroy(&rotlib);
-    }
-    AAppTable aapptable;
-    RamaTable ramatable;
-    AApropensityTableReadFromFile(&aapptable,FILE_AAPROPENSITY);
-    RamaTableReadFromFile(&ramatable,FILE_RAMACHANDRAN);
-    StructureShowDesignSites(&structure, stdout);
-    SelfEnergyGenerateWithBBdepEnergy(&structure,&aapptable,&ramatable,FILE_SELF_ENERGY);
-    RotamerList rotList;
-    RotamerListCreateFromStructure(&rotList, &structure);
-    RotamerListWrite(&rotList,ROT_LIST_ALL);
-    SelfEnergyReadAndCheck(&structure,&rotList,FILE_SELF_ENERGY);
-    RotamerListWrite(&rotList,ROT_LIST_SEC);
-    RotamerListRead(&rotList,ROT_LIST_SEC);
-    StructureShowDesignSitesAfterRotamerDelete(&structure,&rotList,stdout);
-    //MonteCarloOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-    //ReannealingOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-    SimulatedAnnealingOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-    RotamerListDestroy(&rotList);
-  }
-  else if(!strcmp(cmdname, "EnzymeDesign")){
-    if(FLAG_BBDEP_ROTLIB==TRUE){
-      BBdepRotamerLib bbrotlib;
-      BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-      StructureGenerateCatalyticSiteProteinRotamersByBBdepRotLib(&structure,&bbrotlib,&atomParam,&resiTopo,FILE_SITES_CATALYTIC);
-      StructureGenerateFirstShellProteinRotamersByBBdepRotLib(&structure,&bbrotlib,&atomParam,&resiTopo,FILE_SITES_MUTATED,dist_cutoff_shell1);
-      StructureGenerateSecondShellProteinRotamersByBBdepRotLib(&structure,&bbrotlib,&atomParam,&resiTopo,FILE_SITES_ROTAMERIC,dist_cutoff_shell2);
-      BBdepRotamerLibDestroy(&bbrotlib);
-    }
-    else{
-      BBindRotamerLib rotlib;
-      BBindRotamerLibCreate(&rotlib, FILE_ROTLIB);
-      StructureGenerateSpecifiedProteinRotamers(&structure,&rotlib,&atomParam,&resiTopo,FILE_SPECIFIED_SITES);
-      StructureGenerateBindingSiteRotamers(&structure,&rotlib,&atomParam,&resiTopo,BIND_RADIUS);
-      BBindRotamerLibDestroy(&rotlib);
-    }
-    AAppTable aapptable;
-    RamaTable ramatable;
-    AApropensityTableReadFromFile(&aapptable,FILE_AAPROPENSITY);
-    RamaTableReadFromFile(&ramatable,FILE_RAMACHANDRAN);
-    //read ligand ensembles
-    StructureReadSmallMolRotamers(&structure,&resiTopo,FILE_LIG_ENSEMBLE_RMSDSCREEN);
-    StructureShowDesignSites(&structure, stdout);
-    //SelfEnergyGenerate(&structure,SELF_ENERGY_FILE);
-    SelfEnergyGenerateWithBBdepEnergy(&structure,&aapptable,&ramatable,FILE_SELF_ENERGY);
-    RotamerList rotList;
-    RotamerListCreateFromStructure(&rotList, &structure);
-    RotamerListWrite(&rotList,ROT_LIST_ALL);
-    SelfEnergyReadAndCheck(&structure,&rotList,FILE_SELF_ENERGY);
-    RotamerListWrite(&rotList,ROT_LIST_SEC);
-    RotamerListRead(&rotList,ROT_LIST_SEC);
-    StructureShowDesignSitesAfterRotamerDelete(&structure,&rotList,stdout);
-    SimulatedAnnealingOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-    //ReannealingOptimization(&structure,&rotList,DES_CHAINS,PROGRAM_PATH,TGT_PRF,TGT_SS,TGT_SA,TGT_PHIPSI,ROTINDEXFILE,SEQFILE);
-    RotamerListDestroy(&rotList);
-  }
-  else if(!strcmp(cmdname, "ComputeEvolutionScore")){
-    //EvolutionScore(programpath, "test_evo/prf.txt", "test_evo/ss.txt", "test_evo/sa.txt", "test_evo/phi-psi.txt", "test_evo/seq.txt");
-    char seq[]="SSAKEELLTWIQEMTAGYPNVNVSNFKTAAKDGMALCALIHKIRPDLIDFSKLKPQDALENVQMALNIAEKHLGIKMLIDPEDIVEPHPDPKSIITYLMALMHFFKQM";
-    //EvolutionScore2(programpath, "test_evo/prf.txt", "test_evo/ss.txt", "test_evo/sa.txt", "test_evo/phi-psi.txt", seq);
-    double evoscore = EvolutionScore3(PROGRAM_PATH, "test_evo/prf.txt",seq);
-    printf("sequence: %s\nevoscore: %f\n",seq,evoscore);
   }
   else if(!strcmp(cmdname, "OptimizeWeight")){
     char *pdblist="./pdblist.txt";
     PNATAA_WeightOptByGradientDescent(pdblist);
-    //PNATROT_WeightOptByGradientDescent(pdblist);
-  }
-  else if(!strcmp(cmdname,"TestBBdepRotLib")){
-    BBdepRotamerLib bbrotlib;
-    BBdepRotamerLibCreate(&bbrotlib,FILE_ROTLIB);
-    BBdepRotamerLibDestroy(&bbrotlib);
   }
   else if(!strcmp(cmdname,"GetPhiPsi")){
     char PHI_PSI_FILE[MAX_LENGTH_ONE_LINE_IN_FILE+1]="";
@@ -807,7 +622,7 @@ int main(int argc, char* argv[]){
     EVOEF_GetResiMinRmsdRotFromLab(&structure,PDBID);
   }
   else{
-    printf("unknown command name: %s\n, EVOEF exits\n", cmdname);
+    printf("unknown command name: '%s', EVOEF exits\n", cmdname);
     exit(ValueError);
   }
 
@@ -835,19 +650,11 @@ BOOL CheckCommandName(char* queryname){
     "BuildMutant",
     "ComputeResiEnergy",
     "ComputeRotamersEnergy",
-    "ComputeWtRotamersEnergy",
     "OptimizeHydrogen",
     "AddHydrogen",
     "FindInterfaceResidue",
     "ShowResiComposition",
-    "MakeLigandEnsemble",
-    "ScreenLigandEnsemble",
-    "MakeSelfEnergyMatrix",
-    "ComputeEvolutionScore",
-    "EnzymeDesign",
     "ProteinDesign",
-    "EvoDesign",
-    "ProtLigDesign",
     "OptimizeWeight",
     "GetPhiPsi",
     "TestBBdepRotLib",

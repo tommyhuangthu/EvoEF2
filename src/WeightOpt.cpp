@@ -29,7 +29,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 extern BOOL FLAG_MONOMER;
 extern BOOL FLAG_PPI;
-extern BOOL FLAG_PROT_LIG;
 
 extern double weights[MAX_EVOEF_ENERGY_TERM_NUM];
 
@@ -119,12 +118,6 @@ int EnergyTermsRotRead(EnergyTermsRot* pTerms, char* pdblist){
         pTermRot->energy[0][pTermRot->rotCount[0]-1]=(double*)malloc(sizeof(double)*NUM_ENERGY_TERM);
         for(int i=0; i<NUM_ENERGY_TERM; i++){
           pTermRot->energy[0][pTermRot->rotCount[0]-1][i]=atof(StringArrayGet(&strings,i+3));
-          //for the crystal conformation, set the energy term to be zero if it is too large
-          if(FLAG_PROT_LIG==TRUE){
-            if(i>=NUM_ENERGY_MON+NUM_ENERGY_PPI && i<NUM_ENERGY_TERM && pTermRot->energy[0][pTermRot->rotCount[0]-1][i]>10.0){
-              pTermRot->energy[0][pTermRot->rotCount[0]-1][i]=0.0;
-            }
-          }
         }
       }
       else{
@@ -275,17 +268,6 @@ int PNATROT_CalcGradientTwoSide(EnergyTermsRot* pTerms,double loss,double *x,dou
       x[i]=tmp;//restore
     }
   }
-  else if(FLAG_PROT_LIG==TRUE){
-    for(int i=NUM_ENERGY_MON+NUM_ENERGY_PPI;i<xcount;i++){
-      double tmp=x[i];
-      x[i]=tmp+DELTA_X;
-      PNATROT_LossFunction(pTerms,x,xcount,&lossf);
-      x[i]=tmp-DELTA_X;
-      PNATROT_LossFunction(pTerms,x,xcount,&lossb);
-      grad[i]=(lossf-lossb)/(2.0*DELTA_X);
-      x[i]=tmp;//restore
-    }
-  }
 
   return Success;
 }
@@ -312,15 +294,6 @@ int PNATROT_CalcGradientForward(EnergyTermsRot* pTerms,double loss,double *x,dou
       x[i]=tmp;//restore
     }
   }
-  else if(FLAG_PROT_LIG==TRUE){
-    for(int i=NUM_ENERGY_MON+NUM_ENERGY_PPI;i<xcount;i++){
-      double tmp=x[i];
-      x[i]=tmp+DELTA_X;
-      PNATROT_LossFunction(pTerms,x,xcount,&lossf);
-      grad[i]=(lossf-loss)/DELTA_X;
-      x[i]=tmp;//restore
-    }
-  }
 
   return Success;
 }
@@ -340,15 +313,6 @@ int PNATROT_CalcGradientBackword(EnergyTermsRot* pTerms,double loss,double *x,do
   }
   else if(FLAG_PPI==TRUE){
     for(int i=NUM_ENERGY_MON;i<NUM_ENERGY_MON+NUM_ENERGY_PPI;i++){
-      double tmp=x[i];
-      x[i]=tmp-DELTA_X;
-      PNATROT_LossFunction(pTerms,x,xcount,&lossf);
-      grad[i]=(loss-lossf)/DELTA_X;
-      x[i]=tmp;//restore
-    }
-  }
-  else if(FLAG_PROT_LIG==TRUE){
-    for(int i=NUM_ENERGY_MON+NUM_ENERGY_PPI;i<xcount;i++){
       double tmp=x[i];
       x[i]=tmp-DELTA_X;
       PNATROT_LossFunction(pTerms,x,xcount,&lossf);
@@ -473,12 +437,6 @@ int EnergyTermsAARead(EnergyTermsAA* pTerms,char* pdblist){
         pTermAll->energy[TYPE_TWENTYTWO-2][pTermAll->rotCount[TYPE_TWENTYTWO-2]-1]=(double*)malloc(sizeof(double)*NUM_ENERGY_TERM);
         for(int i=0; i<NUM_ENERGY_TERM; i++){
           pTermAll->energy[TYPE_TWENTYTWO-2][pTermAll->rotCount[TYPE_TWENTYTWO-2]-1][i]=atof(StringArrayGet(&strings,i+3));
-          //for the crystal conformation, set the energy term to be zero if it is too large
-          if(FLAG_PROT_LIG==TRUE){
-            if(i>=NUM_ENERGY_MON+NUM_ENERGY_PPI && i<NUM_ENERGY_TERM && pTermAll->energy[TYPE_TWENTYTWO-2][pTermAll->rotCount[TYPE_TWENTYTWO-2]-1][i]>10.0){
-              pTermAll->energy[TYPE_TWENTYTWO-2][pTermAll->rotCount[TYPE_TWENTYTWO-2]-1][i]=0.0;
-            }
-          }
         }
       }
       else if(strcmp("NAT",StringArrayGet(&strings,2))==0){
@@ -487,12 +445,6 @@ int EnergyTermsAARead(EnergyTermsAA* pTerms,char* pdblist){
         pTermAll->energy[TYPE_TWENTYTWO-1][pTermAll->rotCount[TYPE_TWENTYTWO-1]-1]=(double*)malloc(sizeof(double)*NUM_ENERGY_TERM);
         for(int i=0; i<NUM_ENERGY_TERM; i++){
           pTermAll->energy[TYPE_TWENTYTWO-1][pTermAll->rotCount[TYPE_TWENTYTWO-1]-1][i]=atof(StringArrayGet(&strings,i+3));
-          //for the crystal conformation, set the energy term to be zero if it is too large
-          if(FLAG_PROT_LIG==TRUE){
-            if(i>=NUM_ENERGY_MON+NUM_ENERGY_PPI && i<NUM_ENERGY_TERM && pTermAll->energy[TYPE_TWENTYTWO-1][pTermAll->rotCount[TYPE_TWENTYTWO-1]-1][i]>10.0){
-              pTermAll->energy[TYPE_TWENTYTWO-1][pTermAll->rotCount[TYPE_TWENTYTWO-1]-1][i]=0.0;
-            }
-          }
         }
       }
       else{
@@ -699,15 +651,6 @@ int PNATAA_CalcGradientForward(EnergyTermsAA* pTerms,double loss,double *x,doubl
   }
   else if(FLAG_PPI==TRUE){
     for(int i=NUM_ENERGY_MON;i<NUM_ENERGY_MON+NUM_ENERGY_PPI;i++){
-      double tmp=x[i];
-      x[i]=tmp+DELTA_X;
-      PNATAA_LossFunction(pTerms,x,xcount,&lossf);
-      grad[i]=(lossf-loss)/DELTA_X;
-      x[i]=tmp;//restore
-    }
-  }
-  else if(FLAG_PROT_LIG==TRUE){
-    for(int i=NUM_ENERGY_MON+NUM_ENERGY_PPI;i<xcount;i++){
       double tmp=x[i];
       x[i]=tmp+DELTA_X;
       PNATAA_LossFunction(pTerms,x,xcount,&lossf);
