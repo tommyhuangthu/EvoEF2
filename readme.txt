@@ -1,34 +1,36 @@
-                           README file for EvoEF2
+                           README for EvoEF2
 ------------------------------------------------------------------------------
 
 
 What's EvoEF?
 --------------
-EvoEF is the abbreviation of EvoDesign physical Energy Function. EvoDesign is 
-a de novo protein design method developed in the Yang Zhang Lab at the University 
-of Michigan. EvoDesign employs an evolution- and physics-combined scoring 
-function for de novo protein sequence design, where the de novo stands for 
-initiating a design from a randomly generated sequence decoy. In the previous 
-EvoDesign version, FoldX is used for physics-based scoring. Since physical 
-energy is significant in modeling atomic-level interactions, it plays important 
-role in protein-protein interaction design. To improve the computational accuracy 
-and speed, we have designd EvoEF to replace FoldX.
+EvoEF is the abbreviation of EvoDesign physical Energy Function, where EvoDesign is 
+an evolution-based approach to de novo protein sequence design. EvoDesign combines 
+an evolution- and physics-based scoring function for protein design simulation. In 
+the original EvoDesign, FoldX is used as the physics-based score. We found that FoldX 
+is very slow and is not well optimized for modeling protein-protein interactions. 
+To improve the computational accuracy and speed of the physical score for EvoDesign, 
+we developed EvoEF to replace FoldX. Our benchmark test showed that EvoEF is more 
+accurate than FoldX and about three to five times faster than FoldX when they were 
+benchmarked in the same way to predict thermodynamic change upon amino acid mutations 
+(see reference 2 for more details).
 
 
 What's EvoEF2?
 ----------------
-EvoEF2 is an updated version of EvoEF. The motivation of developing EvoEF is 
-for protein design. However, we recently found that EvoEF alone without 
-evolutionary profile showed a poor performance to produce native-like sequence, 
-suggesting the inability of EvoEF for sequence design. We found the reason was 
-that we optimized EvoEF through thermodynamic data (i.e. ddG) prediction. We 
-therefore extended EvoEF into EvoEF2 by introducing four new terms and 
-reoptimizing all the weights and reference energies. EvoEF2 yielded a much 
-better performance on sequence design than EvoEF. Although here we regard 
-EvoEF2 as an energy function, however, the current package can work as a 
-framework for different tasks of molecular modeling, such as computing energy, 
-optimizing hydrogens, protein design. Users can also optimize the weights using 
-this framwork and even develop new energy terms for their own needs.
+EvoEF2 is an updated version of EvoEF. The motivation of developing EvoEF is for 
+protein design. However, we found that EvoEF alone without evolutionary profile 
+showed a poor performance to produce native-like sequence, suggesting the inability 
+of EvoEF for de novo protein sequence design. We found the reason was that we 
+optimized EvoEF by correlating with the experimental thermodynamic change data 
+(i.e. ddG), and a potential specifically optimized for ddG prediction cannot do well 
+for de novo protein design. We therefore extended EvoEF into EvoEF2 by introducing 
+a few new energy terms and reoptimizing all the energy weights. EvoEF2 yielded a much 
+better performance on sequence design than EvoEF. Although here we regard EvoEF2 as 
+an energy function, however, it can work as a framework for different tasks of 
+protein modeling, such as computing energy, repairing incomplete protein side chains, 
+building mutant model, optimizing the position of rotatable hydrogens, and most 
+importantly protein design.
 
 
 What EvoEF2 can do?
@@ -68,8 +70,7 @@ Installation
   o If you are using a Windows system, you can directly run the 
     executable EvoEF2.exe program.
 
-  o If you are working in a UNIX/Linux system, go to the EvoEF2 main 
-    directory and run:
+  o If you are working in a Linux system, go to the EvoEF2 main directory and run:
       ./build.sh
     or run:
       g++ -O3 --fast-math -o EvoEF2 src/*.cpp
@@ -103,24 +104,24 @@ Usage
 -----
   o To compute protein stability, you can run:
 
-    ./EvoEF2 --command=ComputeStability  --pdb=model.pdb
+    ./EvoEF2 --command=ComputeStability  --pdb=protein.pdb
 
 
   o To compute protein-protein binding energy of a dimer complex, you can run:
 
-    ./EvoEF2 --command=ComputeBinding --pdb=dimer.pdb
+    ./EvoEF2 --command=ComputeBinding --pdb=complex.pdb
   
     sometimes, you may have a multi-chain complex structure, which can still be 
     handled by EvoEF, but users need to specify how to split the chains for binding calculation.
     For example, say you have a four-chain (A,B,C, and D) complex, you can split the chains by:
     
-    ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split=AB,CD
+    ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split_chains=AB,CD
     
     which calculates the binding between partner 'AB' and 'CD'.
     
     or:
     
-    ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split=AC,BD
+    ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split_chains=AC,BD
     
     which calculates the binding between partner 'AC' and 'BD'
     
@@ -128,16 +129,14 @@ Usage
 
   o To repair the structure model and do energy minimization:
 
-    ./EvoEF2 --command=RepairStructure --pdb=model.pdb
+    ./EvoEF2 --command=RepairStructure --pdb=xxxx.pdb
 
-    A new structure model name "model_Repair.pdb" will be built in the directory 
-    where you run the command. Running the command successfully should generate a 
-    new structure file named “mod-el_Repair_Model_1.pdb”. In the mutant model, 
-    the optimized polar hydrogen coordinates are also shown.
+    A new structure model name "xxxx_Repair.pdb" will be built in the directory 
+    where you run the command.
 
   o To build mutation model, you can run:
 
-    ./EvoEF2 --command=BuildMutant --pdb=model.pdb --mutant_file=individual_list.txt
+    ./EvoEF2 --command=BuildMutant --pdb=xxxx.pdb --mutant_file=individual_list.txt
 
     where the "individual_list.txt" file shows the mutants that you want to build. 
     It has the following format:
@@ -150,26 +149,26 @@ Usage
     each single mutation, the first alphabet is the wild-type amino acid, the second 
     is the identifier of the chain that the amino acid is attached to, the number is 
     the position of the amino acid in the chain, and the last alphabet is the amino 
-    acid after mutation. Running the command successfully should generate a new 
-    structure file named “model_Repair_Model_1.pdb”. In the mutant model, the 
+    acid after mutation. Running the command successfully should generate mutant models 
+    namded as “xxxx_Model_0001.pdb”, "xxxx_Model_0002.pdb", etc. In the mutant model,  
     optimized polar hydrogen coordinates are also shown.
 
-  o To design new sequence, you can run:
+  o To de novo design new sequence, you can run:
   
-    ./EvoEF2 --command=ProteinDesign --monomer --pdb=yourmonomer.pdb
+    ./EvoEF2 --command=ProteinDesign --monomer --pdb=monomer.pdb
 
-    to redesign a monomer.
+    to design a monomer.
   
     or run:
 
-    ./EvoEF2 --command=ProteinDesign --ppi --design_chains=A --pdb=complex.pdb
+    ./EvoEF2 --command=ProteinDesign --ppint --design_chains=A --pdb=complex.pdb
   
-    to redesign the chain A of a complex.
+    to design the chain A of a complex.
 
     For a multi-chain complex (e.g., ABCD.pdb), if you want to design the first 
     two chains, you can run:
 
-    ./EvoEF2 --command=ProteinDesign --ppi --design_chains=AB --pdb=ABCD.pdb
+    ./EvoEF2 --command=ProteinDesign --ppint --design_chains=AB --pdb=ABCD.pdb
 
     Note that both backbone-depdent and backbone-indepdent rotamer libraries
     are supported by EvoEF2, you can also specify the library that you want to use:
@@ -192,13 +191,13 @@ Usage
   By default, the dun2010bb3per.lib is used for fast speed, if you want to switch
   to another backbone-dependent rotamer library, you can specify:
 
-  ./EvoEF2 --command=ProteinDesign --monomer --rotlib=dun2010bb  --pdb=yourmonomer.pdb
+  ./EvoEF2 --command=ProteinDesign --monomer --rotlib=dun2010bb  --pdb=monomer.pdb
 
   Note that you do not have to add the suffix '.lib' when you specify the rotamer library
 
   or swith to a backbone-independent library by using:
 
-  ./EvoEF2 --command=ProteinDesign --monomer --bbdep=disable  --rotlib=honig984  --pdb=yourmonomer.pdb
+  ./EvoEF2 --command=ProteinDesign --monomer --bbdep=disable  --rotlib=honig984  --pdb=monomer.pdb
 
   we strongly suggest you use the default settings to acheive both good performance and speed.
 
@@ -211,14 +210,13 @@ Cost and Availability
 
 Disclaimer and Copyright
 ------------------------
-  EvoEF2 is copyright (c) Xiaoqiang Huang, tommyhuangthu@foxmail.com, xiaoqiah@umich.edu
+  EvoEF2 is copyright (c) Xiaoqiang Huang (tommyhuangthu@foxmail.com; xiaoqiah@umich.edu)
 
 
 Bugs, comments and suggestions
 ------------------------------
   If you find bugs, or have comments and suggestions for improving EvoEF, please contact 
-  Dr. Xiaoqiang Huang (tommyhuangthu@foxmail.com or xiaoqiah@umich.edu). We will try our 
-  best to improve the program. Thank you very much!
+  Dr. Xiaoqiang Huang (tommyhuangthu@foxmail.com or xiaoqiah@umich.edu).
 
 
 References

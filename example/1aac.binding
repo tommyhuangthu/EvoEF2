@@ -1,0 +1,15 @@
+############################################################################################
+                                    EvoEF2                                                  
+  A framework for macromolecular modeling, e.g.,protein design, protein side-chain packing, 
+protein structure energy minimization, add and optimize hydrogen bonds, build mutant model, 
+calculate protein folding stability, calculate protein-protein binding free energy, etc     
+
+
+  Copyright (c) Xiaoqiang Huang (xiaoqiah@umich.edu; tommyhuangthu@foxmail.com)
+  Dept. of Computational Medicine & Bioinformatics
+  Medical School
+  University of Michigan
+############################################################################################
+command ComputeBinding works
+Your structure has less than or equal to one chain, binding energy cannot be calculated
+Time spent: 0.012000

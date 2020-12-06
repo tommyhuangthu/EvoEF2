@@ -46,13 +46,13 @@ int StructureGenerateWildtypeRotamers(Structure* pThis,BBindRotamerLib* rotlib,A
 
 
 //deal with small molecule
-int StructureGetTruncatedBackbone(Structure* pThis,Residue* pSmallMol, double activeSiteRange, BOOL withHydrogen,AtomArray* pBackboneAtoms);
-int StructureDeployCataConsSitePair(Structure* pThis, CataConsSitePair* pCataConsSitePair);
-int StructurePlaceSmallMol(Structure* pThis, PlacingRule* pPlacingRule, CataConsSitePairArray* pCataConsCollection, int relatedProteinSiteCount,DesignSite** relatedProteinSites, RotamerSet* pSmallMolRotSet);
-int StructureGenerateSmallMolRotamers(Structure* pThis,char* cataConsFileName, char* placingRuleFileName);
-int StructureReadSmallMolRotamers(Structure* pThis,ResiTopoSet* resiTopos,char* smallMolFileName);
-int StructureWriteSmallMolRotamers(Structure* pThis,char* smallMolFile);
-int StructureSmallmolOrientationScreen(Structure* pStructure, ResiTopoSet* pResiTopo, char* oriFileName, char* newFileName, char* screenRuleFileName);
+//int StructureGetTruncatedBackbone(Structure* pThis,Residue* pSmallMol, double activeSiteRange, BOOL withHydrogen,AtomArray* pBackboneAtoms);
+//int StructureDeployCataConsSitePair(Structure* pThis, CataConsSitePair* pCataConsSitePair);
+//int StructurePlaceSmallMol(Structure* pThis, PlacingRule* pPlacingRule, CataConsSitePairArray* pCataConsCollection, int relatedProteinSiteCount,DesignSite** relatedProteinSites, RotamerSet* pSmallMolRotSet);
+//int StructureGenerateSmallMolRotamers(Structure* pThis,char* cataConsFileName, char* placingRuleFileName);
+//int StructureReadSmallMolRotamers(Structure* pThis,ResiTopoSet* resiTopos,char* smallMolFileName);
+//int StructureWriteSmallMolRotamers(Structure* pThis,char* smallMolFile);
+//int StructureSmallmolOrientationScreen(Structure* pStructure, ResiTopoSet* pResiTopo, char* oriFileName, char* newFileName, char* screenRuleFileName);
 
 
 int ProteinSiteBuildAllRotamersByBBdepRotLib(Structure* pThis,int chainIndex,int resiIndex,BBdepRotamerLib* rotlib,AtomParamsSet* atomParams,ResiTopoSet* resiTopos);

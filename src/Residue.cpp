@@ -36,6 +36,7 @@ int ResidueCreate(Residue* pThis){
   pThis->phipsi[0]=-120;
   pThis->phipsi[1]=0;
   DoubleArrayCreate(&pThis->xtorsions,0);
+  pThis->dunbrack=0;
   return Success;
 }
 
@@ -63,6 +64,7 @@ int ResidueCopy(Residue* pThis, Residue* pOther){
   pThis->phipsi[0]=pOther->phipsi[0];
   pThis->phipsi[1]=pOther->phipsi[1];
   DoubleArrayCopy(&pThis->xtorsions,&pOther->xtorsions);
+  pThis->dunbrack = pOther->dunbrack;
   return Success;
 }
 

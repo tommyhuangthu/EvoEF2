@@ -908,623 +908,623 @@ int StructureGenerateWildtypeRotamers(Structure* pThis,BBindRotamerLib* rotlib,A
 
 
 
-#define DEAL_WITH_LIGAND_ROTAMERS
-
-int StructureGetTruncatedBackbone(Structure* pThis, Residue* pSmallMol, double activeSiteRange, BOOL withHydrogen,AtomArray* pBackboneAtoms){
-  int chainIndex;
-  int resiIndex;
-
-  for(chainIndex=0; chainIndex<StructureGetChainCount(pThis); chainIndex++){
-    Chain* pChain = StructureGetChain(pThis,chainIndex);
-    for(resiIndex=0; resiIndex< ChainGetResidueCount(pChain); resiIndex++ ){
-      int atomIndex;
-      double minDist;
-      Residue* pResi = ChainGetResidue(pChain,resiIndex);
-
-      //Make sure it's not the small mol itself
-      if( strcmp(ResidueGetChainName(pResi),ResidueGetChainName(pSmallMol))==0 &&
-        ResidueGetPosInChain(pResi) == ResidueGetPosInChain(pSmallMol) ){
-          continue;
-      }
-
-      minDist = AtomArrayCalcMinDistance( ResidueGetAllAtoms(pResi),ResidueGetAllAtoms(pSmallMol));
-
-      if( minDist > activeSiteRange ){
-        continue;
-      }
-
-      for(atomIndex=0;atomIndex<ResidueGetAtomCount(pResi);atomIndex++){
-        Atom* pAtom = ResidueGetAtom(pResi,atomIndex);
-        if( AtomIsHydrogen(pAtom) && !withHydrogen){
-          continue;
-        }
-        if(pAtom->isBBAtom==FALSE && strcmp(AtomGetName(pAtom), "CB") != 0){
-          continue;
-        }
-        AtomArrayAppend(pBackboneAtoms,pAtom);
-      }
-    }
-  }
-  return Success;
-}
-
-int StructureDeployCataConsSitePair(Structure* pThis, CataConsSitePair* pCataConsSitePair){
-  char errMsg[MAX_LENGTH_ERR_MSG+1];
-  Residue* pSmallMol = NULL;
-
-  RotamerSet* pRotSetOfFirstAndSecondSite[2] = {NULL,NULL};
-
-  RotamerSet tempSmallMolRotamerSet;
-  RotamerSetCreate(&tempSmallMolRotamerSet);
-
-  int result = StructureFindSmallMol(pThis,&pSmallMol);
-  if(FAILED(result)){
-    TraceError("In StructureDeployCataConsSitePair(), Cannot Find Small Molecule",result);
-    return result;
-  }else{
-    Rotamer tempSmallMolRotamer;
-    RotamerCreate(&tempSmallMolRotamer);
-    RotamerSetType(&tempSmallMolRotamer,ResidueGetName(pSmallMol));
-    RotamerAddAtoms(&tempSmallMolRotamer,ResidueGetAllAtoms(pSmallMol));
-    RotamerSetAdd(&tempSmallMolRotamerSet,&tempSmallMolRotamer);
-    RotamerDestroy(&tempSmallMolRotamer);
-  }
-
-  for(int i=0;i<2;i++){
-    int posInChain;
-    char* chainName;
-    char* residueName;
-    if(i==0){
-      posInChain = pCataConsSitePair->firstSitePosInChain;
-      chainName  = pCataConsSitePair->firstSiteChainName;
-      residueName  = pCataConsSitePair->firstSiteResidueName;
-    }
-    else{
-      posInChain = pCataConsSitePair->secondSitePosInChain;
-      chainName  = pCataConsSitePair->secondSiteChainName;
-      residueName  = pCataConsSitePair->secondSiteResidueName;
-    }
-
-    pRotSetOfFirstAndSecondSite[i] = NULL;
-    if( posInChain == ResidueGetPosInChain(pSmallMol) &&
-      strcmp(chainName,ResidueGetChainName(pSmallMol))==0 &&
-      strcmp(residueName,ResidueGetName(pSmallMol))==0 ){
-        pRotSetOfFirstAndSecondSite[i] = &tempSmallMolRotamerSet;
-    }
-    else{
-      int chainIndex=-1, resiIndex = -1;
-      StructureFindChainIndex(pThis, chainName, &chainIndex);
-      ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), posInChain, &resiIndex);
-      DesignSite* pDesignSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
-      pRotSetOfFirstAndSecondSite[i] = DesignSiteGetRotamers(pDesignSite);
-    }
-    if(pRotSetOfFirstAndSecondSite[i]==NULL){
-      result = DataNotExistError;
-      sprintf(errMsg,"In StructureDeployCataConsSitePair(), cannot find site %s %s %d",
-        chainName,residueName,posInChain);
-      TraceError(errMsg,result);
-      return result;
-    }
-  }
-
-  result = CataConsSitePairDeploy(pCataConsSitePair,pRotSetOfFirstAndSecondSite[0],pRotSetOfFirstAndSecondSite[1]);
-
-  if(FAILED(result)){
-    sprintf(errMsg,"In StructureDeployCataConsSitePair(), cannot deploy CataCons "
-      "between Site %s %s %d and %s %s %d",
-      pCataConsSitePair->firstSiteChainName,
-      pCataConsSitePair->firstSiteResidueName,
-      pCataConsSitePair->firstSitePosInChain,
-      pCataConsSitePair->secondSiteChainName,
-      pCataConsSitePair->secondSiteResidueName,
-      pCataConsSitePair->secondSitePosInChain);
-    TraceError(errMsg,result);
-    return result;
-  }
-
-  RotamerSetDestroy(&tempSmallMolRotamerSet);
-  return Success;
-}
-
-int StructurePlaceSmallMol(Structure* pThis, PlacingRule* pPlacingRule, CataConsSitePairArray* pCataConsCollection, int relatedProteinSiteCount,DesignSite** relatedProteinSites, RotamerSet* pSmallMolRotSet){
-  int    result;
-  char errMsg[MAX_LENGTH_ERR_MSG+1];
-  DesignSite* pPlacingStartingSite;
-
-  //Find the placing starting site in pThis->designSites
-  pPlacingStartingSite = NULL;
-  int chainIndex=-1, resiIndex = -1;
-  StructureFindChainIndex(pThis, PlacingRuleGetChainName(pPlacingRule), &chainIndex);
-  ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), PlacingRuleGetPosInChain(pPlacingRule), &resiIndex);
-  pPlacingStartingSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
-  if(pPlacingStartingSite == NULL){
-    result = DataNotExistError;
-    sprintf(errMsg,"In StructurePlaceSmallMol(), the placing rule requires a design site %s %d on "
-      "chain %s. But there is no such design site",
-      PlacingRuleGetResiName(pPlacingRule),
-      PlacingRuleGetPosInChain(pPlacingRule),
-      PlacingRuleGetChainName(pPlacingRule));
-    TraceError(errMsg,result);
-    return result;
-  }
-
-  //All ready, begin calculation
-  result = PlacingRulePlaceSmallMol(pPlacingRule,pCataConsCollection,pPlacingStartingSite, relatedProteinSiteCount,relatedProteinSites,pSmallMolRotSet);
-
-  if(FAILED(result)){
-    return result;
-  }
-
-  return Success;
-}
-
-// this is the main function to generate smallmol rotamers
-int StructureGenerateSmallMolRotamers(Structure* pThis, char* cataConsFileName, char* placingRuleFileName){
-  int    result;
-  Residue* pSmallMol = NULL;
-  AtomArray truncatedBackbone;
-  CataConsSitePairArray cataCons;
-  PlacingRule placingRule; 
-
-  printf("make ligand ensemble for ligand conformational sampling in computational enzyme design\n");
-
-  //1. Create and deploy the catalytic constraints
-  printf("read and deploy catalytic constraints\n");
-  result = CataConsSitePairArrayCreate(&cataCons,cataConsFileName);
-  if(FAILED(result)){
-    return result;
-  }
-  for(int i=0;i<CataConsSitePairArrayGetCount(&cataCons);i++){
-    result = StructureDeployCataConsSitePair(pThis,CataConsSitePairArrayGet(&cataCons,i));
-    if(FAILED(result)){
-      return result;
-    }
-  }
-
-  //2. Find the small molecule
-  printf("find small molecule ligand\n");
-  result = StructureFindSmallMol(pThis,&pSmallMol);
-  if(FAILED(result)){
-    return result;
-  }
-
-  //3. Create and deploy the placing rule, with creation of truncated backbone
-  printf("read and deploy ligand placing process\n");
-  result = PlacingRuleCreate(&placingRule,placingRuleFileName);
-  if(FAILED(result)){
-    return result;
-  }
-
-  printf("get truncated backbone for active site pocket where we want to make the ensemble\n");
-  AtomArrayCreate(&truncatedBackbone);
-  StructureGetTruncatedBackbone(pThis,pSmallMol,PlacingRuleGetTruncatedBackboneRange(&placingRule),TRUE,&truncatedBackbone);
-  //catalytic design sites related to generate smallmole rotamers
-  int relatedProteinSiteCount = 0;
-  DesignSite** ppRelatedDesignSites = NULL;
-  for(int i=0; i<CataConsSitePairArrayGetCount(&cataCons); i++){
-    CataConsSitePair* pSitePair = CataConsSitePairArrayGet(&cataCons, i);
-    for(int k=0; k<2; k++){
-      DesignSite* pSite = NULL;
-      if(k==0){
-        if(ResidueGetPosInChain(pSmallMol)==pSitePair->firstSitePosInChain && strcmp(ResidueGetChainName(pSmallMol), pSitePair->firstSiteChainName)==0){
-          continue;
-        }
-        int chainIndex=-1, resiIndex = -1;
-        StructureFindChainIndex(pThis, pSitePair->firstSiteChainName, &chainIndex);
-        ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), pSitePair->firstSitePosInChain, &resiIndex);
-        pSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
-      }
-      else{
-        if(ResidueGetPosInChain(pSmallMol)==pSitePair->secondSitePosInChain && strcmp(ResidueGetChainName(pSmallMol), pSitePair->secondSiteChainName)==0){
-          continue;
-        }
-        int chainIndex=-1, resiIndex = -1;
-        StructureFindChainIndex(pThis, pSitePair->secondSiteChainName, &chainIndex);
-        ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), pSitePair->secondSitePosInChain, &resiIndex);
-        pSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
-      }
-      //smallmol design site is excluded
-      BOOL designsiteExist = FALSE;
-      for(int j = 0; j < relatedProteinSiteCount; j++){
-        DesignSite* pSite1 = ppRelatedDesignSites[j];
-        //skip the identical sites
-        if(pSite1 == pSite){
-          designsiteExist = TRUE;
-          break;
-        }
-      }
-      if(designsiteExist == FALSE){
-        relatedProteinSiteCount++;
-        ppRelatedDesignSites = (DesignSite**)realloc(ppRelatedDesignSites, sizeof(DesignSite*)*relatedProteinSiteCount);
-        ppRelatedDesignSites[relatedProteinSiteCount-1] = pSite;
-      }
-    }
-  }
-
-  result = PlacingRuleDeploy(&placingRule,pSmallMol,&cataCons,relatedProteinSiteCount, ppRelatedDesignSites,&truncatedBackbone);
-
-  if(FAILED(result)){
-    return result;
-  }
-
-  //4. Prepare the small mol's rotamer set for outputting
-  RotamerSet smallMolRotamerSet;
-  RotamerSetCreate(&smallMolRotamerSet);
-
-  //5. Place small molecule
-  printf("making ligand ensembles\n");
-  result = StructurePlaceSmallMol(pThis,&placingRule,&cataCons,relatedProteinSiteCount, ppRelatedDesignSites,&smallMolRotamerSet);
-  if(FAILED(result)){
-    return result;
-  }
-
-  //6. If the small molecule has already been set as a design site, add rotamers to this design site.
-  printf("add ligand ensemble to a new rotamer set\n");
-  BOOL smallmolRotSetGenerated = FALSE;
-  for(int i=0;i<relatedProteinSiteCount;i++){
-    if(ppRelatedDesignSites[i]->pResidue == pSmallMol){
-      int j;
-      for(j=0;j<RotamerSetGetCount(&smallMolRotamerSet);j++){
-        RotamerSetAdd(DesignSiteGetRotamers(ppRelatedDesignSites[i]), RotamerSetGet(&smallMolRotamerSet,j) );
-      }
-      smallmolRotSetGenerated = TRUE;
-      break;
-    }
-  }
-  //add a new smallmol design site if it doesn't exist
-  if(smallmolRotSetGenerated == FALSE){
-    int chainIndex=-1, resiIndex = -1;
-    StructureFindChainIndex(pThis, ResidueGetChainName(pSmallMol), &chainIndex);
-    ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), ResidueGetPosInChain(pSmallMol), &resiIndex);
-    ProteinSiteAddDesignSite(pThis, chainIndex, resiIndex);
-    RotamerSetCopy(DesignSiteGetRotamers(StructureGetDesignSite(pThis, pThis->designSiteCount-1)), &smallMolRotamerSet);
-  }
-
-  //1.2.3.4. Destroyed    
-  RotamerSetDestroy(&smallMolRotamerSet);
-  PlacingRuleDestroy(&placingRule);
-  CataConsSitePairArrayDestroy(&cataCons);
-  AtomArrayDestroy(&truncatedBackbone);
-  free(ppRelatedDesignSites);
-  ppRelatedDesignSites = NULL;
-
-  return Success;
-}
-
-int StructureReadSmallMolRotamers(Structure* pThis,ResiTopoSet* resiTopos,char* smallMolFileName){
-  char errMsg[MAX_LENGTH_ERR_MSG+1];
-  FileReader smallMolFile;
-  Residue* pSmallMol = NULL;
-
-  int result = StructureFindSmallMol(pThis, &pSmallMol);
-  if(FAILED(result)){
-    sprintf(errMsg,"In StructureReadSmallMolRotamer, cannot file small molecule");
-    TraceError(errMsg,result);
-    return result;
-  }
-
-  int chainIndex=-1, resiIndex = -1;
-  StructureFindChainIndex(pThis, ResidueGetChainName(pSmallMol), &chainIndex);
-  ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), ResidueGetPosInChain(pSmallMol), &resiIndex);
-  DesignSite* pSmallMolSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
-  //the smallmol design site is not defined yet
-  if(pSmallMolSite==NULL){
-    ProteinSiteAddDesignSite(pThis,chainIndex,resiIndex);
-    //pSmallMolSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
-    pSmallMolSite = StructureGetDesignSite(pThis, pThis->designSiteCount-1);
-  }
-  //set smallmol design type
-  pSmallMol->designSiteType = Type_ResidueDesignType_SmallMol;
-
-
-  result = FileReaderCreate(&smallMolFile,smallMolFileName);
-  if(FAILED(result)){
-    sprintf(errMsg,"In StructureReadSmallMolRotamer, cannot create FileReader for %s",smallMolFileName);
-    TraceError(errMsg,result);
-    return result;
-  }
-  while(!FileReaderEndOfFile(&smallMolFile)){
-    int i;
-    char line[MAX_LENGTH_ONE_LINE_IN_FILE+1];
-    char keyword[MAX_LENGTH_ONE_LINE_IN_FILE+1];
-    Residue tempResidueForSmallMol;
-
-    FileReaderGetNextLine(&smallMolFile,line);
-    ExtractFirstStringFromSourceString(keyword,line);
-    if(strcmp(keyword,"MODEL")!=0){
-      continue;
-    }
-
-    ResidueCreate(&tempResidueForSmallMol);
-    ResidueCopy(&tempResidueForSmallMol, pSmallMol);
-    for(i=0;i<ResidueGetAtomCount(&tempResidueForSmallMol);i++){
-      ResidueGetAtom(&tempResidueForSmallMol,i)->isXyzValid = FALSE;
-    }
-    if( FAILED(ResidueReadXYZFromPDB(&tempResidueForSmallMol,&smallMolFile))){
-      sprintf(errMsg,"In StructureReadSmallMolRotamer, error when reading PDB file");
-      TraceError(errMsg,result);
-      return result;
-    }
-
-    ResidueCheckAtomCoordinateValidity(&tempResidueForSmallMol);
-
-    result = ResidueCalcAllAtomXYZ(&tempResidueForSmallMol,resiTopos,NULL,NULL);
-
-    if(FAILED(result)){
-      sprintf(errMsg,"In StructureReadSmallMolRotamer, not all atoms' XYZ can be calculated");
-      TraceError(errMsg,result);
-      return result;
-    }else{
-      Rotamer tempRotamer;
-      RotamerCreate(&tempRotamer);
-
-      strcpy(tempRotamer.type, ResidueGetName(&tempResidueForSmallMol));
-      RotamerAddAtoms(&tempRotamer,ResidueGetAllAtoms(&tempResidueForSmallMol));
-      BondSetCopy(RotamerGetBonds(&tempRotamer),ResidueGetBonds(&tempResidueForSmallMol));
-      RotamerSetChainName(&tempRotamer,ResidueGetChainName(&tempResidueForSmallMol));
-      //read the energy from smallmol rotamer file
-      tempRotamer.vdwInternal = tempResidueForSmallMol.internalEnergy;
-      tempRotamer.vdwBackbone = tempResidueForSmallMol.backboneEnergy;
-      //set smallmol internal energy as self energy and recalculate backbone energy later
-      //tempRotamer.selfenergy = tempResidueForSmallMol.internalEnergy;
-      RotamerSetPosInChain(&tempRotamer,ResidueGetPosInChain(&tempResidueForSmallMol));
-      RotamerSetAdd(DesignSiteGetRotamers(pSmallMolSite),&tempRotamer);
-      RotamerDestroy(&tempRotamer);
-    }
-
-    ResidueDestroy(&tempResidueForSmallMol);
-  }
-
-  FileReaderDestroy(&smallMolFile);
-  return Success;
-}
-
-int StructureWriteSmallMolRotamers(Structure* pThis,char* smallMolFile){
-  int i;
-  Residue* pSmallMol = NULL;
-  RotamerSet* pSmallMolRotamers = NULL;
-  FILE* outputFile = NULL;
-  char errMsg[MAX_LENGTH_ERR_MSG+1];
-  int result;
-
-
-  StructureFindSmallMol(pThis,&pSmallMol);
-  int chainIndex=-1, resiIndex = -1;
-  StructureFindChainIndex(pThis, ResidueGetChainName(pSmallMol), &chainIndex);
-  ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), ResidueGetPosInChain(pSmallMol), &resiIndex);
-  DesignSite* pSmallMolSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
-  pSmallMolRotamers = DesignSiteGetRotamers(pSmallMolSite);
-
-  if(pSmallMolRotamers==NULL){
-    result = DataNotExistError;
-    sprintf(errMsg,"In StructureWriteSmallMolRotamers(), cannot find the design site of the small molecule");
-    TraceError(errMsg,result);
-    return result;
-  }
-
-  if(smallMolFile==NULL || strcmp(smallMolFile,"")==0 ){
-    outputFile = NULL;
-  }
-  else{
-    outputFile = fopen(smallMolFile,"w");
-    if(outputFile==NULL){
-      sprintf(errMsg,"In StructureWriteSmallMolRotamers(), cannot create file %s to write",smallMolFile);
-      result = IOError;
-      TraceError(errMsg,result);
-      return result;
-    }
-  }
-
-  for(i=0;i<RotamerSetGetCount(pSmallMolRotamers);i++){
-    Rotamer tempRotamer;
-    RotamerCreate(&tempRotamer);
-    Model(i,outputFile);
-    RotamerCopy(&tempRotamer,RotamerSetGet(pSmallMolRotamers,i));
-    RotamerRestore(&tempRotamer,pSmallMolRotamers);
-    RotamerShowInPDBFormat(&tempRotamer,"ATOM",ResidueGetChainName(pSmallMol),0,i%10000,FALSE,outputFile);
-    RotamerExtract(&tempRotamer);
-    EndModel(outputFile);
-    fprintf(outputFile,"ENERGY INTERNAL: %f BACKBONE: %f\n",tempRotamer.vdwInternal,tempRotamer.vdwBackbone);
-    RotamerDestroy(&tempRotamer);
-  }
-
-  return Success;
-}
-
-
-// this function is used to delete or screen small molecules with correct direct orientation;
-// oriFileName is small molecule library file by combining the tmpPDB files together;
-// newFileName is the reserved library file after screening;
-// screenFileName is the screening rule file;
-// the following information is needed in the screening rule file:
-// two atoms on small molecule: a catalytic atom and a binding atom;
-// a set of residues in protein scaffold;
-// the information is organized in the following format:
-// CATA_ATOM  C15
-// BIND_ATOM  C11
-// BIND_SITE_GROUP
-// BIND_SITE  CHAINB VAL 55
-// BIND_SITE_GROUP
-// BIND_SITE  CHAINB PHE 56
-// BIND_SITE_GROUP
-// BIND_SITE  CHAINB SER 66
-// BIND_SITE_GROUP
-// BIND_SITE  CHAINB TRP 153
-// in each BIND_SITE_GROUP, all the distances between the binding atom and the CA atoms of the residues must be are 
-// larger than those between the catalytic atom and the CA atoms of the residues;
-// and at least one binding site group must satisfy the above relationship.
-int StructureSmallmolOrientationScreen(Structure* pStructure, ResiTopoSet* pResiTopo, char* oriFileName, char* newFileName, char* screenRuleFileName)
-{
-  typedef struct _BindSite{
-    char chainName[MAX_LENGTH_CHAIN_NAME+1];
-    int  posInChain;
-    char resiName[MAX_LENGTH_RESIDUE_NAME+1];
-  } BindSite;
-
-  typedef struct _BindSiteGroup{
-    int       siteNum;
-    BindSite  *pSites;
-  } BindSiteGroup;
-
-  FileReader     file;
-  int            i, j;
-  int            totalRotamerCounter, acceptedRotamerCounter;
-  char           cataAtomName[MAX_LENGTH_ATOM_NAME+1];
-  char           bindAtomName[MAX_LENGTH_ATOM_NAME+1];
-  int            groupCounter;
-  char           line[MAX_LENGTH_ONE_LINE_IN_FILE+1];
-  BindSiteGroup* pGroups = NULL;
-  FILE*          pOutputFile = NULL;
-  FILE*          pInputFile  = NULL;
-  StringArray    buffer;
-  XYZ            xyzCataAtom;
-  XYZ            xyzBindAtom;
-  BOOL           cataAtomExist = FALSE;
-  BOOL           bindAtomExist = FALSE;
-  BOOL           curRotamerAccepted = FALSE;
-
-  FileReaderCreate(&file, screenRuleFileName);
-  groupCounter = 0;
-  while(!FileReaderEndOfFile(&file)){
-    BOOL doneInThisGroup = FALSE;
-    int siteNum;
-    while(!FAILED(FileReaderGetNextLine(&file, line))){
-      StringArray wordsInLine;
-      StringArrayCreate(&wordsInLine);
-      StringArraySplitString(&wordsInLine, line, ' ');
-
-      if(strcmp(StringArrayGet(&wordsInLine, 0), "CATA_ATOM") == 0){
-        strcpy(cataAtomName, StringArrayGet(&wordsInLine, 1));
-      }
-      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_ATOM") == 0){
-        strcpy(bindAtomName, StringArrayGet(&wordsInLine, 1));
-      }
-      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_SITE_GROUP") == 0 && doneInThisGroup == TRUE){
-        FileReaderSetCurrentPos(&file, FileReaderGetCurrentPos(&file)-1);
-        break;
-      }
-      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_SITE_GROUP") == 0 && doneInThisGroup == FALSE){
-        doneInThisGroup = TRUE;
-        groupCounter++;
-        pGroups = (BindSiteGroup*)realloc(pGroups, sizeof(BindSiteGroup)*groupCounter);
-        siteNum=0;
-        pGroups[groupCounter-1].siteNum = 0;
-        pGroups[groupCounter-1].pSites = NULL;
-        continue;
-      }
-      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_SITE") == 0){
-        siteNum++;
-        pGroups[groupCounter-1].pSites = (BindSite*)realloc(pGroups[groupCounter-1].pSites, sizeof(BindSite)*siteNum);
-        strcpy(pGroups[groupCounter-1].pSites[siteNum-1].chainName, StringArrayGet(&wordsInLine, 1));
-        strcpy(pGroups[groupCounter-1].pSites[siteNum-1].resiName, StringArrayGet(&wordsInLine, 2));
-        pGroups[groupCounter-1].pSites[siteNum-1].posInChain = atoi(StringArrayGet(&wordsInLine, 3));
-        pGroups[groupCounter-1].siteNum = siteNum;
-      }
-    }
-  }
-
-  char errMsg[MAX_LENGTH_ERR_MSG+1];
-  printf("reading small-molecule rotamers from file %s\n", oriFileName);
-  pInputFile = fopen(oriFileName, "r");
-  if(pInputFile == NULL){
-    sprintf(errMsg,"in file %s function %s line %d, can not open file %s for reading",oriFileName);
-    TraceError(errMsg,IOError);
-    return IOError;
-  }
-  pOutputFile = fopen(newFileName, "w");
-  if(pOutputFile == NULL){
-    sprintf(errMsg,"in file %s function %s line %d, can not open file %s for reading",newFileName);
-    TraceError(errMsg,IOError);
-    return IOError;
-  }
-
-  totalRotamerCounter = 0;
-  acceptedRotamerCounter = 0;
-  StringArrayCreate(&buffer);
-  while(fgets(line, MAX_LENGTH_ONE_LINE_IN_FILE, pInputFile)){
-    char keyword[10];
-
-    strcpy(keyword,"");
-    ExtractTargetStringFromSourceString(keyword,line,0,4);
-
-    if(strcmp(keyword,"ENDM")==0){
-      if(cataAtomExist == FALSE || bindAtomExist == FALSE){
-        sprintf(errMsg,"in file %s function %s line %d, CataAtom or BindAtom does not exist in file %s",oriFileName);
-        TraceError(errMsg,FormatError);
-        return FormatError;
-      }
-
-      for(i = 0; i < groupCounter; i++){
-        curRotamerAccepted = TRUE;
-        for(j = 0; j < pGroups[i].siteNum; j++){
-          Residue* pResidue = ChainGetResidue(StructureFindChainByName(pStructure, pGroups[i].pSites[j].chainName), pGroups[i].pSites[j].posInChain);
-          XYZ* pXyzCA = &ResidueGetAtomByName(pResidue, "CA")->xyz;
-          if(XYZDistance(&xyzBindAtom, pXyzCA) > XYZDistance(&xyzCataAtom, pXyzCA)){
-            curRotamerAccepted = FALSE;
-            break;
-          }
-        }
-        if(curRotamerAccepted == TRUE){
-          fprintf(pOutputFile,"MODEL     %d\n", acceptedRotamerCounter);
-          for(j=0;j<StringArrayGetCount(&buffer);j++){
-            fprintf(pOutputFile,"%s",StringArrayGet(&buffer,j));
-          }
-          fprintf(pOutputFile,"ENDMDL\n");
-          acceptedRotamerCounter++;
-          break;
-        }
-      }
-
-      printf("%d / %d rotamers have been processed      \r", acceptedRotamerCounter, totalRotamerCounter);
-      //fflush(stdout);
-    }
-    else if(strcmp(keyword,"MODE")==0){
-      StringArrayDestroy(&buffer);
-      StringArrayCreate(&buffer);
-      totalRotamerCounter++;
-    }
-    else if(strcmp(keyword,"ATOM")==0){
-      char atomName[MAX_LENGTH_ATOM_NAME+1];
-      ExtractTargetStringFromSourceString(atomName,line,12,4);
-      if(strcmp(atomName, cataAtomName) == 0){
-        cataAtomExist = TRUE;
-        ExtractTargetStringFromSourceString(keyword,line,31,7);
-        xyzCataAtom.X = atof(keyword);
-        ExtractTargetStringFromSourceString(keyword,line,39,7);
-        xyzCataAtom.Y = atof(keyword);
-        ExtractTargetStringFromSourceString(keyword,line,47,7);
-        xyzCataAtom.Z = atof(keyword);
-      }
-
-      if(strcmp(atomName, bindAtomName) == 0){
-        bindAtomExist = TRUE;
-        ExtractTargetStringFromSourceString(keyword,line,31,7);
-        xyzBindAtom.X = atof(keyword);
-        ExtractTargetStringFromSourceString(keyword,line,39,7);
-        xyzBindAtom.Y = atof(keyword);
-        ExtractTargetStringFromSourceString(keyword,line,47,7);
-        xyzBindAtom.Z = atof(keyword);
-      }
-      StringArrayAppend(&buffer,line);
-    }
-    else if(strcmp(keyword,"ENER")==0 && curRotamerAccepted==TRUE){
-      fprintf(pOutputFile,"%s",line);
-    }
-  }
-  printf("\n");
-  fclose(pInputFile);
-  fclose(pOutputFile);
-
-  FileReaderDestroy(&file);
-  StringArrayDestroy(&buffer);
-  for(j = 0; j < groupCounter; j++){
-    free(pGroups[j].pSites);
-    pGroups[j].siteNum = 0;
-  }
-  free(pGroups);
-
-  return Success;
-}
+//#define DEAL_WITH_LIGAND_ROTAMERS
+//
+//int StructureGetTruncatedBackbone(Structure* pThis, Residue* pSmallMol, double activeSiteRange, BOOL withHydrogen,AtomArray* pBackboneAtoms){
+//  int chainIndex;
+//  int resiIndex;
+//
+//  for(chainIndex=0; chainIndex<StructureGetChainCount(pThis); chainIndex++){
+//    Chain* pChain = StructureGetChain(pThis,chainIndex);
+//    for(resiIndex=0; resiIndex< ChainGetResidueCount(pChain); resiIndex++ ){
+//      int atomIndex;
+//      double minDist;
+//      Residue* pResi = ChainGetResidue(pChain,resiIndex);
+//
+//      //Make sure it's not the small mol itself
+//      if( strcmp(ResidueGetChainName(pResi),ResidueGetChainName(pSmallMol))==0 &&
+//        ResidueGetPosInChain(pResi) == ResidueGetPosInChain(pSmallMol) ){
+//          continue;
+//      }
+//
+//      minDist = AtomArrayCalcMinDistance( ResidueGetAllAtoms(pResi),ResidueGetAllAtoms(pSmallMol));
+//
+//      if( minDist > activeSiteRange ){
+//        continue;
+//      }
+//
+//      for(atomIndex=0;atomIndex<ResidueGetAtomCount(pResi);atomIndex++){
+//        Atom* pAtom = ResidueGetAtom(pResi,atomIndex);
+//        if( AtomIsHydrogen(pAtom) && !withHydrogen){
+//          continue;
+//        }
+//        if(pAtom->isBBAtom==FALSE && strcmp(AtomGetName(pAtom), "CB") != 0){
+//          continue;
+//        }
+//        AtomArrayAppend(pBackboneAtoms,pAtom);
+//      }
+//    }
+//  }
+//  return Success;
+//}
+//
+//int StructureDeployCataConsSitePair(Structure* pThis, CataConsSitePair* pCataConsSitePair){
+//  char errMsg[MAX_LENGTH_ERR_MSG+1];
+//  Residue* pSmallMol = NULL;
+//
+//  RotamerSet* pRotSetOfFirstAndSecondSite[2] = {NULL,NULL};
+//
+//  RotamerSet tempSmallMolRotamerSet;
+//  RotamerSetCreate(&tempSmallMolRotamerSet);
+//
+//  int result = StructureFindSmallMol(pThis,&pSmallMol);
+//  if(FAILED(result)){
+//    TraceError("In StructureDeployCataConsSitePair(), Cannot Find Small Molecule",result);
+//    return result;
+//  }else{
+//    Rotamer tempSmallMolRotamer;
+//    RotamerCreate(&tempSmallMolRotamer);
+//    RotamerSetType(&tempSmallMolRotamer,ResidueGetName(pSmallMol));
+//    RotamerAddAtoms(&tempSmallMolRotamer,ResidueGetAllAtoms(pSmallMol));
+//    RotamerSetAdd(&tempSmallMolRotamerSet,&tempSmallMolRotamer);
+//    RotamerDestroy(&tempSmallMolRotamer);
+//  }
+//
+//  for(int i=0;i<2;i++){
+//    int posInChain;
+//    char* chainName;
+//    char* residueName;
+//    if(i==0){
+//      posInChain = pCataConsSitePair->firstSitePosInChain;
+//      chainName  = pCataConsSitePair->firstSiteChainName;
+//      residueName  = pCataConsSitePair->firstSiteResidueName;
+//    }
+//    else{
+//      posInChain = pCataConsSitePair->secondSitePosInChain;
+//      chainName  = pCataConsSitePair->secondSiteChainName;
+//      residueName  = pCataConsSitePair->secondSiteResidueName;
+//    }
+//
+//    pRotSetOfFirstAndSecondSite[i] = NULL;
+//    if( posInChain == ResidueGetPosInChain(pSmallMol) &&
+//      strcmp(chainName,ResidueGetChainName(pSmallMol))==0 &&
+//      strcmp(residueName,ResidueGetName(pSmallMol))==0 ){
+//        pRotSetOfFirstAndSecondSite[i] = &tempSmallMolRotamerSet;
+//    }
+//    else{
+//      int chainIndex=-1, resiIndex = -1;
+//      StructureFindChainIndex(pThis, chainName, &chainIndex);
+//      ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), posInChain, &resiIndex);
+//      DesignSite* pDesignSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
+//      pRotSetOfFirstAndSecondSite[i] = DesignSiteGetRotamers(pDesignSite);
+//    }
+//    if(pRotSetOfFirstAndSecondSite[i]==NULL){
+//      result = DataNotExistError;
+//      sprintf(errMsg,"In StructureDeployCataConsSitePair(), cannot find site %s %s %d",
+//        chainName,residueName,posInChain);
+//      TraceError(errMsg,result);
+//      return result;
+//    }
+//  }
+//
+//  result = CataConsSitePairDeploy(pCataConsSitePair,pRotSetOfFirstAndSecondSite[0],pRotSetOfFirstAndSecondSite[1]);
+//
+//  if(FAILED(result)){
+//    sprintf(errMsg,"In StructureDeployCataConsSitePair(), cannot deploy CataCons "
+//      "between Site %s %s %d and %s %s %d",
+//      pCataConsSitePair->firstSiteChainName,
+//      pCataConsSitePair->firstSiteResidueName,
+//      pCataConsSitePair->firstSitePosInChain,
+//      pCataConsSitePair->secondSiteChainName,
+//      pCataConsSitePair->secondSiteResidueName,
+//      pCataConsSitePair->secondSitePosInChain);
+//    TraceError(errMsg,result);
+//    return result;
+//  }
+//
+//  RotamerSetDestroy(&tempSmallMolRotamerSet);
+//  return Success;
+//}
+//
+//int StructurePlaceSmallMol(Structure* pThis, PlacingRule* pPlacingRule, CataConsSitePairArray* pCataConsCollection, int relatedProteinSiteCount,DesignSite** relatedProteinSites, RotamerSet* pSmallMolRotSet){
+//  int    result;
+//  char errMsg[MAX_LENGTH_ERR_MSG+1];
+//  DesignSite* pPlacingStartingSite;
+//
+//  //Find the placing starting site in pThis->designSites
+//  pPlacingStartingSite = NULL;
+//  int chainIndex=-1, resiIndex = -1;
+//  StructureFindChainIndex(pThis, PlacingRuleGetChainName(pPlacingRule), &chainIndex);
+//  ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), PlacingRuleGetPosInChain(pPlacingRule), &resiIndex);
+//  pPlacingStartingSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
+//  if(pPlacingStartingSite == NULL){
+//    result = DataNotExistError;
+//    sprintf(errMsg,"In StructurePlaceSmallMol(), the placing rule requires a design site %s %d on "
+//      "chain %s. But there is no such design site",
+//      PlacingRuleGetResiName(pPlacingRule),
+//      PlacingRuleGetPosInChain(pPlacingRule),
+//      PlacingRuleGetChainName(pPlacingRule));
+//    TraceError(errMsg,result);
+//    return result;
+//  }
+//
+//  //All ready, begin calculation
+//  result = PlacingRulePlaceSmallMol(pPlacingRule,pCataConsCollection,pPlacingStartingSite, relatedProteinSiteCount,relatedProteinSites,pSmallMolRotSet);
+//
+//  if(FAILED(result)){
+//    return result;
+//  }
+//
+//  return Success;
+//}
+//
+//// this is the main function to generate smallmol rotamers
+//int StructureGenerateSmallMolRotamers(Structure* pThis, char* cataConsFileName, char* placingRuleFileName){
+//  int    result;
+//  Residue* pSmallMol = NULL;
+//  AtomArray truncatedBackbone;
+//  CataConsSitePairArray cataCons;
+//  PlacingRule placingRule; 
+//
+//  printf("make ligand ensemble for ligand conformational sampling in computational enzyme design\n");
+//
+//  //1. Create and deploy the catalytic constraints
+//  printf("read and deploy catalytic constraints\n");
+//  result = CataConsSitePairArrayCreate(&cataCons,cataConsFileName);
+//  if(FAILED(result)){
+//    return result;
+//  }
+//  for(int i=0;i<CataConsSitePairArrayGetCount(&cataCons);i++){
+//    result = StructureDeployCataConsSitePair(pThis,CataConsSitePairArrayGet(&cataCons,i));
+//    if(FAILED(result)){
+//      return result;
+//    }
+//  }
+//
+//  //2. Find the small molecule
+//  printf("find small molecule ligand\n");
+//  result = StructureFindSmallMol(pThis,&pSmallMol);
+//  if(FAILED(result)){
+//    return result;
+//  }
+//
+//  //3. Create and deploy the placing rule, with creation of truncated backbone
+//  printf("read and deploy ligand placing process\n");
+//  result = PlacingRuleCreate(&placingRule,placingRuleFileName);
+//  if(FAILED(result)){
+//    return result;
+//  }
+//
+//  printf("get truncated backbone for active site pocket where we want to make the ensemble\n");
+//  AtomArrayCreate(&truncatedBackbone);
+//  StructureGetTruncatedBackbone(pThis,pSmallMol,PlacingRuleGetTruncatedBackboneRange(&placingRule),TRUE,&truncatedBackbone);
+//  //catalytic design sites related to generate smallmole rotamers
+//  int relatedProteinSiteCount = 0;
+//  DesignSite** ppRelatedDesignSites = NULL;
+//  for(int i=0; i<CataConsSitePairArrayGetCount(&cataCons); i++){
+//    CataConsSitePair* pSitePair = CataConsSitePairArrayGet(&cataCons, i);
+//    for(int k=0; k<2; k++){
+//      DesignSite* pSite = NULL;
+//      if(k==0){
+//        if(ResidueGetPosInChain(pSmallMol)==pSitePair->firstSitePosInChain && strcmp(ResidueGetChainName(pSmallMol), pSitePair->firstSiteChainName)==0){
+//          continue;
+//        }
+//        int chainIndex=-1, resiIndex = -1;
+//        StructureFindChainIndex(pThis, pSitePair->firstSiteChainName, &chainIndex);
+//        ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), pSitePair->firstSitePosInChain, &resiIndex);
+//        pSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
+//      }
+//      else{
+//        if(ResidueGetPosInChain(pSmallMol)==pSitePair->secondSitePosInChain && strcmp(ResidueGetChainName(pSmallMol), pSitePair->secondSiteChainName)==0){
+//          continue;
+//        }
+//        int chainIndex=-1, resiIndex = -1;
+//        StructureFindChainIndex(pThis, pSitePair->secondSiteChainName, &chainIndex);
+//        ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), pSitePair->secondSitePosInChain, &resiIndex);
+//        pSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
+//      }
+//      //smallmol design site is excluded
+//      BOOL designsiteExist = FALSE;
+//      for(int j = 0; j < relatedProteinSiteCount; j++){
+//        DesignSite* pSite1 = ppRelatedDesignSites[j];
+//        //skip the identical sites
+//        if(pSite1 == pSite){
+//          designsiteExist = TRUE;
+//          break;
+//        }
+//      }
+//      if(designsiteExist == FALSE){
+//        relatedProteinSiteCount++;
+//        ppRelatedDesignSites = (DesignSite**)realloc(ppRelatedDesignSites, sizeof(DesignSite*)*relatedProteinSiteCount);
+//        ppRelatedDesignSites[relatedProteinSiteCount-1] = pSite;
+//      }
+//    }
+//  }
+//
+//  result = PlacingRuleDeploy(&placingRule,pSmallMol,&cataCons,relatedProteinSiteCount, ppRelatedDesignSites,&truncatedBackbone);
+//
+//  if(FAILED(result)){
+//    return result;
+//  }
+//
+//  //4. Prepare the small mol's rotamer set for outputting
+//  RotamerSet smallMolRotamerSet;
+//  RotamerSetCreate(&smallMolRotamerSet);
+//
+//  //5. Place small molecule
+//  printf("making ligand ensembles\n");
+//  result = StructurePlaceSmallMol(pThis,&placingRule,&cataCons,relatedProteinSiteCount, ppRelatedDesignSites,&smallMolRotamerSet);
+//  if(FAILED(result)){
+//    return result;
+//  }
+//
+//  //6. If the small molecule has already been set as a design site, add rotamers to this design site.
+//  printf("add ligand ensemble to a new rotamer set\n");
+//  BOOL smallmolRotSetGenerated = FALSE;
+//  for(int i=0;i<relatedProteinSiteCount;i++){
+//    if(ppRelatedDesignSites[i]->pResidue == pSmallMol){
+//      int j;
+//      for(j=0;j<RotamerSetGetCount(&smallMolRotamerSet);j++){
+//        RotamerSetAdd(DesignSiteGetRotamers(ppRelatedDesignSites[i]), RotamerSetGet(&smallMolRotamerSet,j) );
+//      }
+//      smallmolRotSetGenerated = TRUE;
+//      break;
+//    }
+//  }
+//  //add a new smallmol design site if it doesn't exist
+//  if(smallmolRotSetGenerated == FALSE){
+//    int chainIndex=-1, resiIndex = -1;
+//    StructureFindChainIndex(pThis, ResidueGetChainName(pSmallMol), &chainIndex);
+//    ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), ResidueGetPosInChain(pSmallMol), &resiIndex);
+//    ProteinSiteAddDesignSite(pThis, chainIndex, resiIndex);
+//    RotamerSetCopy(DesignSiteGetRotamers(StructureGetDesignSite(pThis, pThis->designSiteCount-1)), &smallMolRotamerSet);
+//  }
+//
+//  //1.2.3.4. Destroyed    
+//  RotamerSetDestroy(&smallMolRotamerSet);
+//  PlacingRuleDestroy(&placingRule);
+//  CataConsSitePairArrayDestroy(&cataCons);
+//  AtomArrayDestroy(&truncatedBackbone);
+//  free(ppRelatedDesignSites);
+//  ppRelatedDesignSites = NULL;
+//
+//  return Success;
+//}
+//
+//int StructureReadSmallMolRotamers(Structure* pThis,ResiTopoSet* resiTopos,char* smallMolFileName){
+//  char errMsg[MAX_LENGTH_ERR_MSG+1];
+//  FileReader smallMolFile;
+//  Residue* pSmallMol = NULL;
+//
+//  int result = StructureFindSmallMol(pThis, &pSmallMol);
+//  if(FAILED(result)){
+//    sprintf(errMsg,"In StructureReadSmallMolRotamer, cannot file small molecule");
+//    TraceError(errMsg,result);
+//    return result;
+//  }
+//
+//  int chainIndex=-1, resiIndex = -1;
+//  StructureFindChainIndex(pThis, ResidueGetChainName(pSmallMol), &chainIndex);
+//  ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), ResidueGetPosInChain(pSmallMol), &resiIndex);
+//  DesignSite* pSmallMolSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
+//  //the smallmol design site is not defined yet
+//  if(pSmallMolSite==NULL){
+//    ProteinSiteAddDesignSite(pThis,chainIndex,resiIndex);
+//    //pSmallMolSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
+//    pSmallMolSite = StructureGetDesignSite(pThis, pThis->designSiteCount-1);
+//  }
+//  //set smallmol design type
+//  pSmallMol->designSiteType = Type_ResidueDesignType_SmallMol;
+//
+//
+//  result = FileReaderCreate(&smallMolFile,smallMolFileName);
+//  if(FAILED(result)){
+//    sprintf(errMsg,"In StructureReadSmallMolRotamer, cannot create FileReader for %s",smallMolFileName);
+//    TraceError(errMsg,result);
+//    return result;
+//  }
+//  while(!FileReaderEndOfFile(&smallMolFile)){
+//    int i;
+//    char line[MAX_LENGTH_ONE_LINE_IN_FILE+1];
+//    char keyword[MAX_LENGTH_ONE_LINE_IN_FILE+1];
+//    Residue tempResidueForSmallMol;
+//
+//    FileReaderGetNextLine(&smallMolFile,line);
+//    ExtractFirstStringFromSourceString(keyword,line);
+//    if(strcmp(keyword,"MODEL")!=0){
+//      continue;
+//    }
+//
+//    ResidueCreate(&tempResidueForSmallMol);
+//    ResidueCopy(&tempResidueForSmallMol, pSmallMol);
+//    for(i=0;i<ResidueGetAtomCount(&tempResidueForSmallMol);i++){
+//      ResidueGetAtom(&tempResidueForSmallMol,i)->isXyzValid = FALSE;
+//    }
+//    if( FAILED(ResidueReadXYZFromPDB(&tempResidueForSmallMol,&smallMolFile))){
+//      sprintf(errMsg,"In StructureReadSmallMolRotamer, error when reading PDB file");
+//      TraceError(errMsg,result);
+//      return result;
+//    }
+//
+//    ResidueCheckAtomCoordinateValidity(&tempResidueForSmallMol);
+//
+//    result = ResidueCalcAllAtomXYZ(&tempResidueForSmallMol,resiTopos,NULL,NULL);
+//
+//    if(FAILED(result)){
+//      sprintf(errMsg,"In StructureReadSmallMolRotamer, not all atoms' XYZ can be calculated");
+//      TraceError(errMsg,result);
+//      return result;
+//    }else{
+//      Rotamer tempRotamer;
+//      RotamerCreate(&tempRotamer);
+//
+//      strcpy(tempRotamer.type, ResidueGetName(&tempResidueForSmallMol));
+//      RotamerAddAtoms(&tempRotamer,ResidueGetAllAtoms(&tempResidueForSmallMol));
+//      BondSetCopy(RotamerGetBonds(&tempRotamer),ResidueGetBonds(&tempResidueForSmallMol));
+//      RotamerSetChainName(&tempRotamer,ResidueGetChainName(&tempResidueForSmallMol));
+//      //read the energy from smallmol rotamer file
+//      tempRotamer.vdwInternal = tempResidueForSmallMol.internalEnergy;
+//      tempRotamer.vdwBackbone = tempResidueForSmallMol.backboneEnergy;
+//      //set smallmol internal energy as self energy and recalculate backbone energy later
+//      //tempRotamer.selfenergy = tempResidueForSmallMol.internalEnergy;
+//      RotamerSetPosInChain(&tempRotamer,ResidueGetPosInChain(&tempResidueForSmallMol));
+//      RotamerSetAdd(DesignSiteGetRotamers(pSmallMolSite),&tempRotamer);
+//      RotamerDestroy(&tempRotamer);
+//    }
+//
+//    ResidueDestroy(&tempResidueForSmallMol);
+//  }
+//
+//  FileReaderDestroy(&smallMolFile);
+//  return Success;
+//}
+//
+//int StructureWriteSmallMolRotamers(Structure* pThis,char* smallMolFile){
+//  int i;
+//  Residue* pSmallMol = NULL;
+//  RotamerSet* pSmallMolRotamers = NULL;
+//  FILE* outputFile = NULL;
+//  char errMsg[MAX_LENGTH_ERR_MSG+1];
+//  int result;
+//
+//
+//  StructureFindSmallMol(pThis,&pSmallMol);
+//  int chainIndex=-1, resiIndex = -1;
+//  StructureFindChainIndex(pThis, ResidueGetChainName(pSmallMol), &chainIndex);
+//  ChainFindResidueByPosInChain(StructureGetChain(pThis, chainIndex), ResidueGetPosInChain(pSmallMol), &resiIndex);
+//  DesignSite* pSmallMolSite = StructureFindDesignSite(pThis, chainIndex, resiIndex);
+//  pSmallMolRotamers = DesignSiteGetRotamers(pSmallMolSite);
+//
+//  if(pSmallMolRotamers==NULL){
+//    result = DataNotExistError;
+//    sprintf(errMsg,"In StructureWriteSmallMolRotamers(), cannot find the design site of the small molecule");
+//    TraceError(errMsg,result);
+//    return result;
+//  }
+//
+//  if(smallMolFile==NULL || strcmp(smallMolFile,"")==0 ){
+//    outputFile = NULL;
+//  }
+//  else{
+//    outputFile = fopen(smallMolFile,"w");
+//    if(outputFile==NULL){
+//      sprintf(errMsg,"In StructureWriteSmallMolRotamers(), cannot create file %s to write",smallMolFile);
+//      result = IOError;
+//      TraceError(errMsg,result);
+//      return result;
+//    }
+//  }
+//
+//  for(i=0;i<RotamerSetGetCount(pSmallMolRotamers);i++){
+//    Rotamer tempRotamer;
+//    RotamerCreate(&tempRotamer);
+//    Model(i,outputFile);
+//    RotamerCopy(&tempRotamer,RotamerSetGet(pSmallMolRotamers,i));
+//    RotamerRestore(&tempRotamer,pSmallMolRotamers);
+//    RotamerShowInPDBFormat(&tempRotamer,"ATOM",ResidueGetChainName(pSmallMol),0,i%10000,FALSE,outputFile);
+//    RotamerExtract(&tempRotamer);
+//    EndModel(outputFile);
+//    fprintf(outputFile,"ENERGY INTERNAL: %f BACKBONE: %f\n",tempRotamer.vdwInternal,tempRotamer.vdwBackbone);
+//    RotamerDestroy(&tempRotamer);
+//  }
+//
+//  return Success;
+//}
+//
+//
+//// this function is used to delete or screen small molecules with correct direct orientation;
+//// oriFileName is small molecule library file by combining the tmpPDB files together;
+//// newFileName is the reserved library file after screening;
+//// screenFileName is the screening rule file;
+//// the following information is needed in the screening rule file:
+//// two atoms on small molecule: a catalytic atom and a binding atom;
+//// a set of residues in protein scaffold;
+//// the information is organized in the following format:
+//// CATA_ATOM  C15
+//// BIND_ATOM  C11
+//// BIND_SITE_GROUP
+//// BIND_SITE  CHAINB VAL 55
+//// BIND_SITE_GROUP
+//// BIND_SITE  CHAINB PHE 56
+//// BIND_SITE_GROUP
+//// BIND_SITE  CHAINB SER 66
+//// BIND_SITE_GROUP
+//// BIND_SITE  CHAINB TRP 153
+//// in each BIND_SITE_GROUP, all the distances between the binding atom and the CA atoms of the residues must be are 
+//// larger than those between the catalytic atom and the CA atoms of the residues;
+//// and at least one binding site group must satisfy the above relationship.
+//int StructureSmallmolOrientationScreen(Structure* pStructure, ResiTopoSet* pResiTopo, char* oriFileName, char* newFileName, char* screenRuleFileName)
+//{
+//  typedef struct _BindSite{
+//    char chainName[MAX_LENGTH_CHAIN_NAME+1];
+//    int  posInChain;
+//    char resiName[MAX_LENGTH_RESIDUE_NAME+1];
+//  } BindSite;
+//
+//  typedef struct _BindSiteGroup{
+//    int       siteNum;
+//    BindSite  *pSites;
+//  } BindSiteGroup;
+//
+//  FileReader     file;
+//  int            i, j;
+//  int            totalRotamerCounter, acceptedRotamerCounter;
+//  char           cataAtomName[MAX_LENGTH_ATOM_NAME+1];
+//  char           bindAtomName[MAX_LENGTH_ATOM_NAME+1];
+//  int            groupCounter;
+//  char           line[MAX_LENGTH_ONE_LINE_IN_FILE+1];
+//  BindSiteGroup* pGroups = NULL;
+//  FILE*          pOutputFile = NULL;
+//  FILE*          pInputFile  = NULL;
+//  StringArray    buffer;
+//  XYZ            xyzCataAtom;
+//  XYZ            xyzBindAtom;
+//  BOOL           cataAtomExist = FALSE;
+//  BOOL           bindAtomExist = FALSE;
+//  BOOL           curRotamerAccepted = FALSE;
+//
+//  FileReaderCreate(&file, screenRuleFileName);
+//  groupCounter = 0;
+//  while(!FileReaderEndOfFile(&file)){
+//    BOOL doneInThisGroup = FALSE;
+//    int siteNum;
+//    while(!FAILED(FileReaderGetNextLine(&file, line))){
+//      StringArray wordsInLine;
+//      StringArrayCreate(&wordsInLine);
+//      StringArraySplitString(&wordsInLine, line, ' ');
+//
+//      if(strcmp(StringArrayGet(&wordsInLine, 0), "CATA_ATOM") == 0){
+//        strcpy(cataAtomName, StringArrayGet(&wordsInLine, 1));
+//      }
+//      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_ATOM") == 0){
+//        strcpy(bindAtomName, StringArrayGet(&wordsInLine, 1));
+//      }
+//      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_SITE_GROUP") == 0 && doneInThisGroup == TRUE){
+//        FileReaderSetCurrentPos(&file, FileReaderGetCurrentPos(&file)-1);
+//        break;
+//      }
+//      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_SITE_GROUP") == 0 && doneInThisGroup == FALSE){
+//        doneInThisGroup = TRUE;
+//        groupCounter++;
+//        pGroups = (BindSiteGroup*)realloc(pGroups, sizeof(BindSiteGroup)*groupCounter);
+//        siteNum=0;
+//        pGroups[groupCounter-1].siteNum = 0;
+//        pGroups[groupCounter-1].pSites = NULL;
+//        continue;
+//      }
+//      else if(strcmp(StringArrayGet(&wordsInLine, 0), "BIND_SITE") == 0){
+//        siteNum++;
+//        pGroups[groupCounter-1].pSites = (BindSite*)realloc(pGroups[groupCounter-1].pSites, sizeof(BindSite)*siteNum);
+//        strcpy(pGroups[groupCounter-1].pSites[siteNum-1].chainName, StringArrayGet(&wordsInLine, 1));
+//        strcpy(pGroups[groupCounter-1].pSites[siteNum-1].resiName, StringArrayGet(&wordsInLine, 2));
+//        pGroups[groupCounter-1].pSites[siteNum-1].posInChain = atoi(StringArrayGet(&wordsInLine, 3));
+//        pGroups[groupCounter-1].siteNum = siteNum;
+//      }
+//    }
+//  }
+//
+//  char errMsg[MAX_LENGTH_ERR_MSG+1];
+//  printf("reading small-molecule rotamers from file %s\n", oriFileName);
+//  pInputFile = fopen(oriFileName, "r");
+//  if(pInputFile == NULL){
+//    sprintf(errMsg,"in file %s function %s line %d, can not open file %s for reading",oriFileName);
+//    TraceError(errMsg,IOError);
+//    return IOError;
+//  }
+//  pOutputFile = fopen(newFileName, "w");
+//  if(pOutputFile == NULL){
+//    sprintf(errMsg,"in file %s function %s line %d, can not open file %s for reading",newFileName);
+//    TraceError(errMsg,IOError);
+//    return IOError;
+//  }
+//
+//  totalRotamerCounter = 0;
+//  acceptedRotamerCounter = 0;
+//  StringArrayCreate(&buffer);
+//  while(fgets(line, MAX_LENGTH_ONE_LINE_IN_FILE, pInputFile)){
+//    char keyword[10];
+//
+//    strcpy(keyword,"");
+//    ExtractTargetStringFromSourceString(keyword,line,0,4);
+//
+//    if(strcmp(keyword,"ENDM")==0){
+//      if(cataAtomExist == FALSE || bindAtomExist == FALSE){
+//        sprintf(errMsg,"in file %s function %s line %d, CataAtom or BindAtom does not exist in file %s",oriFileName);
+//        TraceError(errMsg,FormatError);
+//        return FormatError;
+//      }
+//
+//      for(i = 0; i < groupCounter; i++){
+//        curRotamerAccepted = TRUE;
+//        for(j = 0; j < pGroups[i].siteNum; j++){
+//          Residue* pResidue = ChainGetResidue(StructureFindChainByName(pStructure, pGroups[i].pSites[j].chainName), pGroups[i].pSites[j].posInChain);
+//          XYZ* pXyzCA = &ResidueGetAtomByName(pResidue, "CA")->xyz;
+//          if(XYZDistance(&xyzBindAtom, pXyzCA) > XYZDistance(&xyzCataAtom, pXyzCA)){
+//            curRotamerAccepted = FALSE;
+//            break;
+//          }
+//        }
+//        if(curRotamerAccepted == TRUE){
+//          fprintf(pOutputFile,"MODEL     %d\n", acceptedRotamerCounter);
+//          for(j=0;j<StringArrayGetCount(&buffer);j++){
+//            fprintf(pOutputFile,"%s",StringArrayGet(&buffer,j));
+//          }
+//          fprintf(pOutputFile,"ENDMDL\n");
+//          acceptedRotamerCounter++;
+//          break;
+//        }
+//      }
+//
+//      printf("%d / %d rotamers have been processed      \r", acceptedRotamerCounter, totalRotamerCounter);
+//      //fflush(stdout);
+//    }
+//    else if(strcmp(keyword,"MODE")==0){
+//      StringArrayDestroy(&buffer);
+//      StringArrayCreate(&buffer);
+//      totalRotamerCounter++;
+//    }
+//    else if(strcmp(keyword,"ATOM")==0){
+//      char atomName[MAX_LENGTH_ATOM_NAME+1];
+//      ExtractTargetStringFromSourceString(atomName,line,12,4);
+//      if(strcmp(atomName, cataAtomName) == 0){
+//        cataAtomExist = TRUE;
+//        ExtractTargetStringFromSourceString(keyword,line,31,7);
+//        xyzCataAtom.X = atof(keyword);
+//        ExtractTargetStringFromSourceString(keyword,line,39,7);
+//        xyzCataAtom.Y = atof(keyword);
+//        ExtractTargetStringFromSourceString(keyword,line,47,7);
+//        xyzCataAtom.Z = atof(keyword);
+//      }
+//
+//      if(strcmp(atomName, bindAtomName) == 0){
+//        bindAtomExist = TRUE;
+//        ExtractTargetStringFromSourceString(keyword,line,31,7);
+//        xyzBindAtom.X = atof(keyword);
+//        ExtractTargetStringFromSourceString(keyword,line,39,7);
+//        xyzBindAtom.Y = atof(keyword);
+//        ExtractTargetStringFromSourceString(keyword,line,47,7);
+//        xyzBindAtom.Z = atof(keyword);
+//      }
+//      StringArrayAppend(&buffer,line);
+//    }
+//    else if(strcmp(keyword,"ENER")==0 && curRotamerAccepted==TRUE){
+//      fprintf(pOutputFile,"%s",line);
+//    }
+//  }
+//  printf("\n");
+//  fclose(pInputFile);
+//  fclose(pOutputFile);
+//
+//  FileReaderDestroy(&file);
+//  StringArrayDestroy(&buffer);
+//  for(j = 0; j < groupCounter; j++){
+//    free(pGroups[j].pSites);
+//    pGroups[j].siteNum = 0;
+//  }
+//  free(pGroups);
+//
+//  return Success;
+//}
 
 
 #define DEAL_WITH_PROTEIN_ROTAMERS_BBDEP

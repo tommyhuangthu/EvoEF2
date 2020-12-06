@@ -37,62 +37,62 @@ extern int TOT_SEQ_LEN;
 
 extern char PDBID[MAX_LENGTH_FILE_NAME+1];
 
-int SitePairConsDeploy(CataConsSitePairArray *pSitePairArray, Structure *pStructure)
-{
-  int i;
-  for(i=0; i<CataConsSitePairArrayGetCount(pSitePairArray); i++){
-    CataConsSitePair *pSitePair   = CataConsSitePairArrayGet(pSitePairArray, i);
-    DesignSite *pFirstDesignSite  = StructureFindDesignSiteByChainName(pStructure, pSitePair->firstSiteChainName, pSitePair->firstSitePosInChain);
-    DesignSite *pSecondDesignSite = StructureFindDesignSiteByChainName(pStructure, pSitePair->secondSiteChainName, pSitePair->secondSitePosInChain);
-    CataConsSitePairDeploy(pSitePair, DesignSiteGetRotamers(pFirstDesignSite), DesignSiteGetRotamers(pSecondDesignSite));
-  }
-  return Success;
-}
-
-int EnergyMatrixUpdateForCataConsNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePair *pSitePair, Structure *pStructure)
-{
-  DesignSite *pFirstDesignSite  = StructureFindDesignSiteByChainName(pStructure, pSitePair->firstSiteChainName, pSitePair->firstSitePosInChain);
-  DesignSite *pSecondDesignSite = StructureFindDesignSiteByChainName(pStructure, pSitePair->secondSiteChainName, pSitePair->secondSitePosInChain);
-  int firstDesignSiteIndex      = DesignSiteIndexFind(pStructure, pSitePair->firstSiteChainName, pSitePair->firstSitePosInChain);
-  int secondDesignSiteIndex     = DesignSiteIndexFind(pStructure, pSitePair->secondSiteChainName, pSitePair->secondSitePosInChain);
-  EnergyMatrixBlock* pBlockII = EnergyMatrixGetBlock(pMatrix, firstDesignSiteIndex, firstDesignSiteIndex);
-  EnergyMatrixBlock* pBlockKK = EnergyMatrixGetBlock(pMatrix, secondDesignSiteIndex, secondDesignSiteIndex);
-  for(int j=0; j<pBlockII->RotamerCountSiteI; j++){
-    int trueIndexIJ;
-    Rotamer *pRotamerJ;
-    RotamerOriginalIndexGet(pList, firstDesignSiteIndex, j, &trueIndexIJ);
-    pRotamerJ = RotamerSetGet(DesignSiteGetRotamers(pFirstDesignSite), trueIndexIJ);
-    for(int s=0; s<pBlockKK->RotamerCountSiteK; s++){
-      int trueIndexKS;
-      Rotamer *pRotamerS;
-      RotamerOriginalIndexGet(pList, secondDesignSiteIndex, s, &trueIndexKS);
-      pRotamerS = RotamerSetGet(DesignSiteGetRotamers(pSecondDesignSite), trueIndexKS);
-      if(CataConsSitePairCheck(pSitePair, pRotamerJ, pRotamerS) == FALSE){
-        if(firstDesignSiteIndex < secondDesignSiteIndex){
-          *EnergyMatrixGet(pMatrix, firstDesignSiteIndex, secondDesignSiteIndex, j, s) += 1e4;
-        }
-        else{
-          *EnergyMatrixGet(pMatrix, secondDesignSiteIndex, firstDesignSiteIndex, s, j) += 1e4;
-        }
-      }
-    }
-  }
-  return Success;
-}
-
-int EnergyMatrixUpdateForCataConsArrayNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePairArray *pSitePairArray, Structure *pStructure)
-{
-  int i;
-  for(i=0; i<CataConsSitePairArrayGetCount(pSitePairArray); i++){
-    CataConsSitePair *pSitePair = CataConsSitePairArrayGet(pSitePairArray, i);
-    EnergyMatrixUpdateForCataConsNew(pMatrix, pList, pSitePair, pStructure);
-  }
-  return Success;
-}
-
-
-
-
+//int SitePairConsDeploy(CataConsSitePairArray *pSitePairArray, Structure *pStructure)
+//{
+//  int i;
+//  for(i=0; i<CataConsSitePairArrayGetCount(pSitePairArray); i++){
+//    CataConsSitePair *pSitePair   = CataConsSitePairArrayGet(pSitePairArray, i);
+//    DesignSite *pFirstDesignSite  = StructureFindDesignSiteByChainName(pStructure, pSitePair->firstSiteChainName, pSitePair->firstSitePosInChain);
+//    DesignSite *pSecondDesignSite = StructureFindDesignSiteByChainName(pStructure, pSitePair->secondSiteChainName, pSitePair->secondSitePosInChain);
+//    CataConsSitePairDeploy(pSitePair, DesignSiteGetRotamers(pFirstDesignSite), DesignSiteGetRotamers(pSecondDesignSite));
+//  }
+//  return Success;
+//}
+//
+//int EnergyMatrixUpdateForCataConsNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePair *pSitePair, Structure *pStructure)
+//{
+//  DesignSite *pFirstDesignSite  = StructureFindDesignSiteByChainName(pStructure, pSitePair->firstSiteChainName, pSitePair->firstSitePosInChain);
+//  DesignSite *pSecondDesignSite = StructureFindDesignSiteByChainName(pStructure, pSitePair->secondSiteChainName, pSitePair->secondSitePosInChain);
+//  int firstDesignSiteIndex      = DesignSiteIndexFind(pStructure, pSitePair->firstSiteChainName, pSitePair->firstSitePosInChain);
+//  int secondDesignSiteIndex     = DesignSiteIndexFind(pStructure, pSitePair->secondSiteChainName, pSitePair->secondSitePosInChain);
+//  EnergyMatrixBlock* pBlockII = EnergyMatrixGetBlock(pMatrix, firstDesignSiteIndex, firstDesignSiteIndex);
+//  EnergyMatrixBlock* pBlockKK = EnergyMatrixGetBlock(pMatrix, secondDesignSiteIndex, secondDesignSiteIndex);
+//  for(int j=0; j<pBlockII->RotamerCountSiteI; j++){
+//    int trueIndexIJ;
+//    Rotamer *pRotamerJ;
+//    RotamerOriginalIndexGet(pList, firstDesignSiteIndex, j, &trueIndexIJ);
+//    pRotamerJ = RotamerSetGet(DesignSiteGetRotamers(pFirstDesignSite), trueIndexIJ);
+//    for(int s=0; s<pBlockKK->RotamerCountSiteK; s++){
+//      int trueIndexKS;
+//      Rotamer *pRotamerS;
+//      RotamerOriginalIndexGet(pList, secondDesignSiteIndex, s, &trueIndexKS);
+//      pRotamerS = RotamerSetGet(DesignSiteGetRotamers(pSecondDesignSite), trueIndexKS);
+//      if(CataConsSitePairCheck(pSitePair, pRotamerJ, pRotamerS) == FALSE){
+//        if(firstDesignSiteIndex < secondDesignSiteIndex){
+//          *EnergyMatrixGet(pMatrix, firstDesignSiteIndex, secondDesignSiteIndex, j, s) += 1e4;
+//        }
+//        else{
+//          *EnergyMatrixGet(pMatrix, secondDesignSiteIndex, firstDesignSiteIndex, s, j) += 1e4;
+//        }
+//      }
+//    }
+//  }
+//  return Success;
+//}
+//
+//int EnergyMatrixUpdateForCataConsArrayNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePairArray *pSitePairArray, Structure *pStructure)
+//{
+//  int i;
+//  for(i=0; i<CataConsSitePairArrayGetCount(pSitePairArray); i++){
+//    CataConsSitePair *pSitePair = CataConsSitePairArrayGet(pSitePairArray, i);
+//    EnergyMatrixUpdateForCataConsNew(pMatrix, pList, pSitePair, pStructure);
+//  }
+//  return Success;
+//}
+//
+//
+//
+//
 int DesignSiteGetRotamerTypeAndCount(RotamerList* pList, Structure* pStructure, StringArray** ppRotamerType, IntArray** ppRotamerCount){
   int totalRemainRotamerCount=0;
   int designSiteCount=StructureGetDesignSiteCount(pStructure);

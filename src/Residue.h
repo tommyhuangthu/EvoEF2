@@ -82,6 +82,7 @@ typedef struct _Residue{
   double backboneEnergy;
   double phipsi[2];
   DoubleArray xtorsions;
+  double dunbrack;
 } Residue;
 
 int ResidueCreate(Residue* pThis);

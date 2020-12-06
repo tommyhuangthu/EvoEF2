@@ -33,18 +33,39 @@ extern BOOL FLAG_EXPAND_HYDROXYL_ROT;
 
 int EVOEF_help(){
   printf(  
-    "EvoEF2 program options:\n\n"
-    "Basic OPTIONS:\n"
-    "Usage: EvoEF [OPTIONS] --pdb=pdbfile\n"  
+    "Usage: EvoEF [OPTIONS] --pdb=pdbfile\n"
+    "OPTIONS:\n\n"
+    "   -v              print version\n"
+    "   -h              print help message\n"
     "   --version       print version\n"
-    "   --help          print help message\n"  
+    "   --help          print help message\n"
     "   --command=arg   choose your computation type:\n"
-    "                   RepairStructure"
+    "                   RepairStructure\n"
     "                   ComputeStability\n"
     "                   ComputeBinding\n"
     "                   BuildMutant\n"
+    "                   OptimizeHydrogen\n"
     "                   ProteinDesign\n"
-    );
+    "                   SideChainRepack\n"
+    "\n"
+    "command can be used in conjunction with one or more following options:\n\n"
+    "   --pdb=arg                 arg is a standard readable PDB file\n"
+    "   --split_chains=arg        arg specifies chain splitting for ComputeBinding with >=3 protein chains (e.g. AB,C or AB,CDE)\n"
+    "   --mutant_file=arg         arg is a file recording one or more mutants\n"
+    "   --use_input_sc            use input protein structure's side chains as rotamers\n"
+    "   --bbdep=arg               arg = yes/no, turning on/off the flag for using bb-dep rotamer library (default: yes)\n"
+    "   --ppi_cutoff=arg          arg is the distance cutoff for the 1st shell of PPI (default: 5.0 Angstroms)\n"
+    "   --evolution               protein design using both physics and evolution scores\n"
+    "   --physics                 protein design using physical scoring function (EvoEF) only (default)\n"
+    "   --monomer                 the designing protein is treated as a monomer\n"
+    "   --ppint                   protein-protein interaction design\n"
+    "   --design_chains=arg       arg is the designing chain(s)'s identifier (e.g. A, or AB)\n"
+    "   --rotate_hydroxyl=arg     arg = yes/no, turning on/off the flag for rotating Ser, Thr, and Tyr hydroxyl hydrogen (default: on)\n"
+    "   --xdeviation=arg          arg is a float value cutoff for side-chain Chi angle deviation\n"
+    "   --wread=arg               arg is a energy-weight file\n"
+    "   --wildtype_only\n"        
+    "   --rotlib=arg              arg is the name of a rotamer lib\n"
+   );
   return Success;
 }
 
@@ -57,20 +78,15 @@ int EVOEF_version(){
 int EVOEF_interface(){
   printf(
     "############################################################################################\n"
-    "                                    EVOEF                                                    \n"
+    "                                    EvoEF2                                                  \n"
     "  A framework for macromolecular modeling, e.g.,protein design, protein side-chain packing, \n"
     "protein structure energy minimization, add and optimize hydrogen bonds, build mutant model, \n"
     "calculate protein folding stability, calculate protein-protein binding free energy, etc     \n"
     "\n\n"
-    "  Written by Xiaoqiang Huang\n"
-    "  (xiaoqiah@umich.edu; tommyhuangthu@foxmail.com)\n"
-    "  Copyright (C) The Yang Zhang Lab\n"
-    "  Prof. Yang Zhang's Research Group\n"
+    "  Copyright (c) Xiaoqiang Huang (xiaoqiah@umich.edu; tommyhuangthu@foxmail.com)\n"
     "  Dept. of Computational Medicine & Bioinformatics\n"
     "  Medical School\n"
     "  University of Michigan\n"
-    "  Ann Arbor, MI 48109-2218, USA\n"
-    "  E-mail: zhng@umich.edu\n"
     "############################################################################################\n"
     );
   return Success;

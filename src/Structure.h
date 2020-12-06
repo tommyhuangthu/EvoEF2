@@ -22,7 +22,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "Chain.h"
 #include "Rotamer.h"
 #include "DesignSite.h"
-#include "SmallMol.h"
 
 
 typedef struct _Structure{

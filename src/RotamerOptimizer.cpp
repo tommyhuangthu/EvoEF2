@@ -774,7 +774,10 @@ int ProteinSiteOptimizeRotamerWithBBdepRotLib(Structure *pStructure, int chainIn
     BondSetCopy(&tempResidue.bonds, &pRotIR->bonds);
     EVOEF_AminoAcidReferenceEnergy(tempResidue.name,energyTerms);
     EVOEF_EnergyResidueIntraEnergy(&tempResidue,energyTerms);
-    AminoAcidDunbrackEnergy(&tempResidue,pBBdepRotLib,energyTerms);
+    //AminoAcidDunbrackEnergy(&tempResidue,pBBdepRotLib,energyTerms);
+    EVOEF_RotamerDunbrackEnergy(pRotIR,energyTerms);
+    tempResidue.dunbrack = pRotIR->dunbrack;
+    DoubleArrayCopy(&tempResidue.xtorsions,&pRotIR->xtorsions);
     for(int is = 0; is < surroundingResiNum; is++){
       Residue *pResIS = ppSurroundingResidues[is];
       if(strcmp(tempResidue.chainName, pResIS->chainName) == 0 && tempResidue.posInChain == pResIS->posInChain-1){

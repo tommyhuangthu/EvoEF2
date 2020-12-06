@@ -20,9 +20,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ENERGY_OPTIMIZATION_H
 
 #include "EnergyOptimization.h"
-#include "DEE.h"
 #include "EnergyMatrix.h"
-#include "SmallMol.h"
 #include "Sequence.h"
 
 //Common parameters
@@ -46,9 +44,9 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RA_CYCLE     100 //should not be too large, [100,200]?
 
 
-int SitePairConsDeploy(CataConsSitePairArray *pSitePairArray, Structure *pStructure);
-int EnergyMatrixUpdateForCataConsNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePair *pSitePair, Structure *pStructure);
-int EnergyMatrixUpdateForCataConsArrayNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePairArray *pSitePairArray, Structure *pStructure);
+//int SitePairConsDeploy(CataConsSitePairArray *pSitePairArray, Structure *pStructure);
+//int EnergyMatrixUpdateForCataConsNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePair *pSitePair, Structure *pStructure);
+//int EnergyMatrixUpdateForCataConsArrayNew(EnergyMatrix *pMatrix, RotamerList* pList, CataConsSitePairArray *pSitePairArray, Structure *pStructure);
 int DesignSiteGetRotamerTypeAndCount(RotamerList* pList, Structure* pStructure, StringArray** ppRotamerType, IntArray** ppRotamerCount);
 
 int SequenceRandomSingleSiteIndex(int *mutSiteIndex, int designSiteCount);
