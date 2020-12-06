@@ -41,7 +41,7 @@ char PROGRAM_PATH[MAX_LENGTH_ONE_LINE_IN_FILE+1]=".";
 char PROGRAM_NAME[MAX_LENGTH_FILE_NAME+1]="EvoEF2";
 
 //target design protein/ligand 
-char PDB[MAX_LENGTH_FILE_NAME+1] = "example/1aac.pdb";
+char PDB[MAX_LENGTH_FILE_NAME+1] = "protein.pdb";
 char PDBPATH[MAX_LENGTH_ONE_LINE_IN_FILE+1]=".";
 char PDBNAME[MAX_LENGTH_FILE_NAME+1];
 char PDBID[MAX_LENGTH_FILE_NAME+1];
@@ -63,7 +63,7 @@ char FILE_RAMACHANDRAN[MAX_LENGTH_FILE_NAME+1] = "library/ramachandran.txt";
 char FILE_WEIGHT_READ[MAX_LENGTH_FILE_NAME+1]= "wread/weight_EvoEF2.txt";
 
 //other user-specified parameters
-char MUTANT_FILE[MAX_LENGTH_FILE_NAME+1] = "example/individual_list.txt";
+char MUTANT_FILE[MAX_LENGTH_FILE_NAME+1] = "individual_list.txt";
 double PPI_DIST_CUTOFF = 5.0;
 double TORSION_DEVIATION_CUTOFF=20.0;
 char INTERFACE_RESIDUE_FILE[MAX_LENGTH_FILE_NAME+1]="interfaceresidue.txt";
@@ -250,11 +250,11 @@ int main(int argc, char* argv[]){
   //show interface
   EVOEF_interface();
   
-  //char* cmdname="";
+  char* cmdname="";
   //char *cmdname = "RepairStructure";
   //char *cmdname = "ComputeStability";
   //char *cmdname = "ComputeBinding";
-  char *cmdname = "BuildMutant";
+  //char *cmdname = "BuildMutant";
   //char *cmdname = "OptimizeHydrogen";
   //char *cmdname = "ComputeResiEnergy";
   //char *cmdname = "AddHydrogen";
@@ -379,6 +379,14 @@ int main(int argc, char* argv[]){
         break;
     }
   }
+
+  // Early termination if no command detected
+  if(!strcmp(cmdname,"")){
+    printf("no command name detected, please select a command for execution, program exits\n");
+    printf("run './%s -h' to show help document\n",PROGRAM_NAME);
+    exit(Success);
+  }
+
 
   //specify the rotamer library
   if(FLAG_BBDEP_ROTLIB==TRUE){
