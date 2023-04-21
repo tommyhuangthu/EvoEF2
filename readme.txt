@@ -213,15 +213,20 @@ Disclaimer and Copyright
 Copyright (c) Xiaoqiang Huang
 
 
-References
-----------
-If EvoEF2 is important to your work, please cite: 
-  
-Xiaoqiang Huang, Robin Pearce, Yang Zhang. EvoEF2: accurate and fast energy function 
-for computational protein design. Bioinformatics (2020), 36:1135-1142. 
-https://doi.org/10.1093/bioinformatics/btz740
-
 Bugs, comments and suggestions
 ------------------------------
 For suggestions or bug reporting, please contact
 xiaoqiah@outlook.com or xiaoqiah@umich.edu
+
+
+References
+----------
+Xiaoqiang Huang, Robin Pearce, Yang Zhang. EvoEF2: accurate and fast energy function 
+for computational protein design. Bioinformatics (2020), 36:1135-1142. 
+https://doi.org/10.1093/bioinformatics/btz740
+
+Robin Pearce, Xiaoqiang Huang, Dani Setiawan, Yang Zhang. EvoDesign: Designing
+Protein–Protein Binding Interactions Using Evolutionary Interface Profiles in
+Conjunction with an Optimized Physical Energy Function. Journal of Molecular
+Biology (2019) 431: 2467-2476.
+
