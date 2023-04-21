@@ -35,143 +35,143 @@ importantly protein design.
 
 What EvoEF2 can do?
 ---------------------
-  The following useful functions are supported in EvoEF:
+The following useful functions are supported in EvoEF:
 
-  o  ComputeStability
-     -- compute the stability of a given protein molecule in PDB format.
+o  ComputeStability
+   -- compute the stability of a given protein molecule in PDB format.
 
-  o  ComputeBinding
-     -- compute the binding affinity of protein-protein dimeric complexes.
+o  ComputeBinding
+   -- compute the binding affinity of protein-protein dimeric complexes.
 
-  o  RepairStructure
-     -- repair incomplete side chains of user-provided model and minimize 
-        energy of give model to reduce possible steric clashes.
+o  RepairStructure
+   -- repair incomplete side chains of user-provided model and minimize 
+      energy of give model to reduce possible steric clashes.
   
-  o  BuildMutant
-     -- build mutant models, which are useful for ddG assessment in combination
-        with the wild-type. Before running the BuildMutant module, we suggest 
-        users run the RepairStructure module to minimize the structure using 
-        the EvoEF2 force field
+o  BuildMutant
+   -- build mutant models, which are useful for ddG assessment in combination
+      with the wild-type. Before running the BuildMutant module, we suggest 
+      users run the RepairStructure module to minimize the structure using 
+      the EvoEF2 force field
   
-  o  OptimizeHydrogen
-     -- optimize the positions of hydrogens in the hydroxyl groups (e.g. Ser, 
-        Thr, and Tyr).
+o  OptimizeHydrogen
+   -- optimize the positions of hydrogens in the hydroxyl groups (e.g. Ser, 
+      Thr, and Tyr).
 
-  o  ProteinDesign
-     -- de novo protein sequence design using a fixed backbone.
+o  ProteinDesign
+   -- de novo protein sequence design using a fixed backbone.
   
-  o  and some other commands (please see the source code for details)
+o  and some other commands (please see the source code for details)
 
 
 Installation
 ------------
-  First of all, download the EvoEF2 package.
+First of all, download the EvoEF2 package.
 
-  o If you are using a Windows system, you can directly run the 
-    executable EvoEF2.exe program.
+o If you are using a Windows system, you can directly run the 
+  executable EvoEF2.exe program.
 
-  o If you are working in a Linux system, go to the EvoEF2 main directory and run:
-      ./build.sh
-    or run:
-      g++ -O3 --fast-math -o EvoEF2 src/*.cpp
-    to build the EvoEF2 program.
-    If it does not work, try without the '--fast-math' option.
+o If you are working in a Linux system, go to the EvoEF2 main directory and run:
+  ./build.sh
+  or run:
+  g++ -O3 --fast-math -o EvoEF2 src/*.cpp
+  to build the EvoEF2 program.
+  If it does not work, try without the '--fast-math' option.
 
-  o If you want to build a new EvoEF2.exe in Windows, you need to install a g++ 
-    compilier first. You can make the installation with MinGW. After you 
-    complete the installation of g++ compiler and set the environmental 
-    variable. You can test if the g++ compiler has been successfully 
-    installed with 'g++ -v' in the cmd.exe control console. If successful, 
-    it will show messages similar to:
+o If you want to build a new EvoEF2.exe in Windows, you need to install a g++ 
+  compilier first. You can make the installation with MinGW. After you 
+  complete the installation of g++ compiler and set the environmental 
+  variable. You can test if the g++ compiler has been successfully 
+  installed with 'g++ -v' in the cmd.exe control console. If successful, 
+  it will show messages similar to:
 
-    "Using built-in specs.
-    COLLECT_GCC=g++
-    COLLECT_LTO_WRAPPER=c:/mingw/bin/../libexec/gcc/mingw32/8.2.0/lto-wrapper.exe
-    Target: mingw32
-    Configured with: ../src/gcc-8.2.0/configure --build=x86_64-pc-linux-gnu \
-    --host=mingw32 --target=mingw32 --prefix=/mingw --disable-win32-registry \
-    --with-arch=i586 --with-tune=generic --enable-languages=c,c++,objc,obj-c++,fortran,ada \
-    --with-pkgversion='MinGW.org GCC-8
-    Thread model: win32
-    gcc version 8.2.0 (MinGW.org GCC-8.2.0-3)"
+  "Using built-in specs.
+  COLLECT_GCC=g++
+  COLLECT_LTO_WRAPPER=c:/mingw/bin/../libexec/gcc/mingw32/8.2.0/lto-wrapper.exe
+  Target: mingw32
+  Configured with: ../src/gcc-8.2.0/configure --build=x86_64-pc-linux-gnu \
+  --host=mingw32 --target=mingw32 --prefix=/mingw --disable-win32-registry \
+  --with-arch=i586 --with-tune=generic --enable-languages=c,c++,objc,obj-c++,fortran,ada \
+  --with-pkgversion='MinGW.org GCC-8
+  Thread model: win32
+  gcc version 8.2.0 (MinGW.org GCC-8.2.0-3)"
    
-    Otherwise, it will say that g++ cannot be found. You should check your installation.
-    If you try many times but still cannot install the program successfully, please 
-    contact report problems to the emails listed below.
+  Otherwise, it will say that g++ cannot be found. You should check your installation.
+  If you try many times but still cannot install the program successfully, please 
+  contact report problems to the emails listed below.
 
 
 Usage
 -----
-  o To compute protein stability, you can run:
+o To compute protein stability, you can run:
 
-    ./EvoEF2 --command=ComputeStability  --pdb=protein.pdb
+  ./EvoEF2 --command=ComputeStability  --pdb=protein.pdb
 
 
-  o To compute protein-protein binding energy of a dimer complex, you can run:
+o To compute protein-protein binding energy of a dimer complex, you can run:
 
-    ./EvoEF2 --command=ComputeBinding --pdb=complex.pdb
+  ./EvoEF2 --command=ComputeBinding --pdb=complex.pdb
+
+  Sometimes, you may have a multi-chain complex structure, which can still be 
+  handled by EvoEF, but users need to specify how to split the chains for binding calculation.
+  For example, say you have a four-chain (A,B,C, and D) complex, you can split the chains by:
+    
+  ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split_chains=AB,CD
+    
+  which calculates the binding between partner 'AB' and 'CD'.
+    
+  or:
+    
+  ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split_chains=AC,BD
+    
+  which calculates the binding between partner 'AC' and 'BD'
+    
+  In one word, users can split chains in their own ways.
+
+o To repair the structure model and do energy minimization:
+
+  ./EvoEF2 --command=RepairStructure --pdb=xxxx.pdb
+
+  A new structure model name "xxxx_Repair.pdb" will be built in the directory 
+  where you run the command.
+
+o To build mutation model, you can run:
+
+  ./EvoEF2 --command=BuildMutant --pdb=xxxx.pdb --mutant_file=individual_list.txt
+
+  where the "individual_list.txt" file shows the mutants that you want to build. 
+  It has the following format:
   
-    sometimes, you may have a multi-chain complex structure, which can still be 
-    handled by EvoEF, but users need to specify how to split the chains for binding calculation.
-    For example, say you have a four-chain (A,B,C, and D) complex, you can split the chains by:
-    
-    ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split_chains=AB,CD
-    
-    which calculates the binding between partner 'AB' and 'CD'.
-    
-    or:
-    
-    ./EvoEF2 --command=ComputeBinding --pdb=multi_chain_complex.pdb --split_chains=AC,BD
-    
-    which calculates the binding between partner 'AC' and 'BD'
-    
-    In one word, users can split chains in their own ways.
+  CA171A;
+  CA171A,DB180E;
 
-  o To repair the structure model and do energy minimization:
+  Each mutation is written in one line ending with “;”, and multiple mutants are 
+  divided by “,”. Note that there’s no gap/space between single mutations. For 
+  each single mutation, the first alphabet is the wild-type amino acid, the second 
+  is the identifier of the chain that the amino acid is attached to, the number is 
+  the position of the amino acid in the chain, and the last alphabet is the amino 
+  acid after mutation. Running the command successfully should generate mutant models 
+  namded as “xxxx_Model_0001.pdb”, "xxxx_Model_0002.pdb", etc. In the mutant model,  
+  optimized polar hydrogen coordinates are also shown.
 
-    ./EvoEF2 --command=RepairStructure --pdb=xxxx.pdb
-
-    A new structure model name "xxxx_Repair.pdb" will be built in the directory 
-    where you run the command.
-
-  o To build mutation model, you can run:
-
-    ./EvoEF2 --command=BuildMutant --pdb=xxxx.pdb --mutant_file=individual_list.txt
-
-    where the "individual_list.txt" file shows the mutants that you want to build. 
-    It has the following format:
+o To de novo design new sequence, you can run:
   
-    CA171A;
-    CA171A,DB180E;
+  ./EvoEF2 --command=ProteinDesign --monomer --pdb=monomer.pdb
 
-    Each mutation is written in one line ending with “;”, and multiple mutants are 
-    divided by “,”. Note that there’s no gap/space between single mutations. For 
-    each single mutation, the first alphabet is the wild-type amino acid, the second 
-    is the identifier of the chain that the amino acid is attached to, the number is 
-    the position of the amino acid in the chain, and the last alphabet is the amino 
-    acid after mutation. Running the command successfully should generate mutant models 
-    namded as “xxxx_Model_0001.pdb”, "xxxx_Model_0002.pdb", etc. In the mutant model,  
-    optimized polar hydrogen coordinates are also shown.
-
-  o To de novo design new sequence, you can run:
+  to design a monomer.
   
-    ./EvoEF2 --command=ProteinDesign --monomer --pdb=monomer.pdb
+  or run:
 
-    to design a monomer.
+  ./EvoEF2 --command=ProteinDesign --ppint --design_chains=A --pdb=complex.pdb
   
-    or run:
+  to design the chain A of a complex.
 
-    ./EvoEF2 --command=ProteinDesign --ppint --design_chains=A --pdb=complex.pdb
-  
-    to design the chain A of a complex.
+  For a multi-chain complex (e.g., ABCD.pdb), if you want to design the first 
+  two chains, you can run:
 
-    For a multi-chain complex (e.g., ABCD.pdb), if you want to design the first 
-    two chains, you can run:
+  ./EvoEF2 --command=ProteinDesign --ppint --design_chains=AB --pdb=ABCD.pdb
 
-    ./EvoEF2 --command=ProteinDesign --ppint --design_chains=AB --pdb=ABCD.pdb
-
-    Note that both backbone-depdent and backbone-indepdent rotamer libraries
-    are supported by EvoEF2, you can also specify the library that you want to use:
+  Note that both backbone-depdent and backbone-indepdent rotamer libraries
+  are supported by EvoEF2, you can also specify the library that you want to use:
 
   Backbone-depdent rotamer library:
 
@@ -204,30 +204,30 @@ Usage
 
 Cost and Availability
 ---------------------
-  The standalone EvoEF2 program and its source code is freely available to users. 
-  But unauthorized copying of the source code files via any medium is strictly prohibited.
+The standalone EvoEF2 program and its source code is freely available to users. 
+But unauthorized copying of the source code files via any medium is strictly prohibited.
 
 
 Disclaimer and Copyright
 ------------------------
-  EvoEF2 is copyright (c) Xiaoqiang Huang (tommyhuangthu@foxmail.com; xiaoqiah@umich.edu)
+EvoEF2 is copyright (c) Xiaoqiang Huang (tommyhuangthu@foxmail.com; xiaoqiah@umich.edu)
 
 
 Bugs, comments and suggestions
 ------------------------------
-  If you find bugs, or have comments and suggestions for improving EvoEF, please contact 
-  Dr. Xiaoqiang Huang (tommyhuangthu@foxmail.com or xiaoqiah@umich.edu).
+If you find bugs, or have comments and suggestions for improving EvoEF, please contact 
+xiaoqiah@outlook.com or xiaoqiah@umich.edu
 
 
 References
 ----------
-  If EvoEF2 is important to your work, please cite: 
+If EvoEF2 is important to your work, please cite: 
   
-  [1] Xiaoqiang Huang, Robin Pearce, Yang Zhang. EvoEF2: accurate and fast energy function 
-  for computational protein design. Bioinformatics (2020), 36:1135-1142. 
-  https://doi.org/10.1093/bioinformatics/btz740
+[1] Xiaoqiang Huang, Robin Pearce, Yang Zhang. EvoEF2: accurate and fast energy function 
+for computational protein design. Bioinformatics (2020), 36:1135-1142. 
+https://doi.org/10.1093/bioinformatics/btz740
   
-  [2] Robin Pearce, Xiaoqiang Huang, Dani Setiawan, Yang Zhang. EvoDesign: Designing 
-  protein-protein binding interactions using evolutionary interface profiles in conjunction 
-  with an optimized physical energy function. Journal of Molecular Biology (2019), 431:2467-2476.
+[2] Robin Pearce, Xiaoqiang Huang, Dani Setiawan, Yang Zhang. EvoDesign: Designing 
+protein-protein binding interactions using evolutionary interface profiles in conjunction 
+with an optimized physical energy function. Journal of Molecular Biology (2019), 431:2467-2476.
 
